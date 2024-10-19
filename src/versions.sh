@@ -7,13 +7,13 @@ declare -A _CC
 # Declare externally defined variables ----------------------------------------
 
 # Defined in GL (globals.sh)
-declare OK ERROR STDERR TRUE K8SVERSION
+declare OK ERROR STDERR TRUE
 
 # _CC_set_up_master_node_v1_30_0 uses kubeadm to set up the master node.
 # Args: arg1 - the container to set up.
 _CC_set_up_master_node_v1_30_0() {
 
-  local setupfile lbaddr certSANs certkey masternum t
+  local setupfile lbaddr certSANs="{}" certkey masternum t
   # Set by _CC_get_master_join_details:
   local cahash token masterip
 
@@ -32,7 +32,8 @@ _CC_set_up_master_node_v1_30_0() {
 
       # Sets cahash, token, and masterip:
       lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
-      certSANs="certSANs: [ '${lbaddr}' ]"
+      certSANs="
+  certSANs: [ '${lbaddr}' ]"
       uploadcerts="--upload-certs"
       certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
@@ -81,9 +82,7 @@ podsubnet="10.244.0.0/16"
 servicesubnet="10.96.0.0/16"
 
 cat <<EOF >kubeadm-init-defaults.yaml
-apiVersion: kubeadm.k8s.io/v1beta3
-kind: InitConfiguration
-${certkey}
+apiVersion: kubeadm.k8s.io/v1beta4
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
@@ -92,46 +91,48 @@ bootstrapTokens:
   usages:
   - signing
   - authentication
+kind: InitConfiguration
+${certkey}
 localAPIEndpoint:
   advertiseAddress: \$ipaddr
   bindPort: 6443
 nodeRegistration:
   criSocket: unix:///var/run/crio/crio.sock
   imagePullPolicy: IfNotPresent
+  imagePullSerial: true
   name: $1
-  kubeletExtraArgs: {}
   taints:
   - effect: NoSchedule
-    key: node-role.kubernetes.io/master
+    key: node-role.kubernetes.io/control-plane
+timeouts:
+  controlPlaneComponentHealthCheck: 4m0s
+  discovery: 5m0s
+  etcdAPICall: 2m0s
+  kubeletHealthCheck: 4m0s
+  kubernetesAPICall: 1m0s
+  tlsBootstrap: 5m0s
+  upgradeManifests: 5m0s
 ---
-apiVersion: kubelet.config.k8s.io/v1beta1
-kind: KubeletConfiguration
-failSwapOn: false
-featureGates:
-  AllAlpha: false
-  RunAsGroup: true
-runtimeRequestTimeout: "5m"
----
-kind: ClusterConfiguration
-controlPlaneEndpoint: "${lbaddr:-\$ipaddr}:6443"
-apiServer:
-  timeoutForControlPlane: 4m0s
-  ${certSANs}
-apiVersion: kubeadm.k8s.io/v1beta3
+apiServer: ${certSANs}
+apiVersion: kubeadm.k8s.io/v1beta4
+caCertificateValidityPeriod: 87600h0m0s
+certificateValidityPeriod: 8760h0m0s
 certificatesDir: /etc/kubernetes/pki
-clusterName: kubernetes
+clusterName: ${_CC[clustername]}-cluster
+controlPlaneEndpoint: ${lbaddr:-\$ipaddr}:6443
 controllerManager: {}
-dns:
-  type: CoreDNS
+dns: {}
+encryptionAlgorithm: RSA-2048
 etcd:
   local:
     dataDir: /var/lib/etcd
 imageRepository: registry.k8s.io
-kubernetesVersion: ${K8SVERSION}
+kind: ClusterConfiguration
 networking:
   dnsDomain: cluster.local
-  podSubnet: \$podsubnet
-  serviceSubnet: \$servicesubnet
+  podSubnet: \${podsubnet}
+  serviceSubnet: \${servicesubnet}
+proxy: {}
 scheduler: {}
 EOF
 
@@ -139,7 +140,7 @@ if [[ -z "${masterip}" ]]; then
   # Run the preflight phase
   kubeadm init \\
     --ignore-preflight-errors Swap \\
-    --config=kubeadm-init-defaults.yaml ${uploadcerts} \\
+    --config=kubeadm-init-defaults.yaml \\
     phase preflight
 
   # Set up the kubelet
@@ -152,8 +153,9 @@ if [[ -z "${masterip}" ]]; then
 
   # Tell kubeadm to carry on from here
   kubeadm init \\
-    --pod-network-cidr=10.244.0.0/16 \\
+    --config=kubeadm-init-defaults.yaml \\
     --ignore-preflight-errors Swap \\
+    ${uploadcerts} \\
     --skip-phases=preflight,kubelet-start
 
   export KUBECONFIG=/etc/kubernetes/super-admin.conf
