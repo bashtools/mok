@@ -505,7 +505,7 @@ sysctl -w net.ipv6.conf.default.disable_ipv6=1
 systemctl stop kubelet crio
 systemctl disable kubelet crio
 
-yum -y install haproxy
+apt -y install haproxy
 
 INTERNAL_IP=\$(ip ro get default 8.8.8.8 | head -n 1 | cut -f 7 -d " ")
 
