@@ -82,4 +82,4 @@ Then delete the podman/docker images that were built by `mok build`.
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
 * `mok build` and `mok create` can show extensive logs with `--tailf`
 
-* [Full Documentation](https://github.com/bashtools/mok-docs/tree/master/docs)
+* [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)
