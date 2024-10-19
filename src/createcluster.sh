@@ -12,6 +12,11 @@ declare OK ERROR STDERR STOP TRUE FALSE K8SVERSION
 # Getters/Setters -------------------------------------------------------------
 
 # CC_set_clustername setter sets the clustername array item.
+CC_clustername() {
+  printf '%s' "${_CC[clustername]}"
+}
+
+# CC_set_clustername setter sets the clustername array item.
 CC_set_clustername() {
   _CC[clustername]="$1"
 }

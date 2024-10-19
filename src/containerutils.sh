@@ -89,17 +89,16 @@ CU_get_cluster_size() {
 # Args: arg1 - docker container id or container name to query.
 CU_get_container_ip() {
 
+  local info
+
   [[ -z ${1} ]] && {
     printf 'INTERNAL ERROR: Container ID (arg1) cannot be empty.\n' >"${STDERR}"
     err || return
   }
 
-  docker inspect \
-    --format='{{.NetworkSettings.Networks.mok_network.IPAddress}}' \
-    "$1" || {
-    printf 'ERROR: %s inspect failed\n' "${_CU[containerrt]}" >"${STDERR}"
+  info=$(CU_get_container_info "$1") || return
+  JSONPath '.[0].NetworkSettings.Networks.*.IPAddress' -b <<<"${info}" ||
     err || return
-  }
 }
 
 # CU_get_container_info uses 'docker/podman inspect $id' to output
@@ -125,7 +124,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs systemd_always
+  local imagename img allimgs systemd_always clustername
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -161,15 +160,19 @@ EnD
     return "${ERROR}"
   fi
 
+  clustername=$(CC_clustername) || err || return
+
   if [[ ${_CU[containerrt]} == "podman" ]];
   then 
-    create_network=$(docker network exists mok_network)
+    docker network exists "${clustername}_network" >/dev/null 2>&1
+    create_network=$?
   else
-    create_network=$(docker network inspect mok_network >/dev/null 2>&1)
+    docker network inspect "${clustername}_network" >/dev/null 2>&1
+    create_network=$?
   fi
 
-  [[ ${create_network} -eq 1 ]] && {
-    docker network create mok_network || {
+  [[ ${create_network} -ne 0 ]] && {
+    docker network create "${clustername}_network" || {
       printf 'ERROR: docker network create failed\n' >"${STDERR}"
       err || return
     }
@@ -178,7 +181,7 @@ EnD
   [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
 
   docker run --privileged ${systemd_always} \
-    --network mok_network \
+    --network "${clustername}_network" \
     -v /lib/modules:/lib/modules:ro \
     --detach \
     --name "$1" \
