@@ -68,7 +68,7 @@ Then delete the podman/docker images that were built by `mok build`.
 
 ## Known Issues
 
-* Creating a cluster with a load balancer, `--with-lb`, currently fails
+* With multiple master nodes only the first master is set up
 
 ## Some Features
 
