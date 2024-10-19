@@ -22,6 +22,7 @@ export PATH=/usr/local/bin:$PATH
 *First use*
 
 ```bash
+# Takes around 10 minutes
 sudo mok build image
 ```
 
