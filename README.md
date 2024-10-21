@@ -11,15 +11,13 @@ Current kubernetes version: 1.31
 * Podman or Docker
 * 5 GB of free disk space
 
-*Install* to `/usr/local/bin`
+*Install*
+
+On Fedora `~/local/bin` should be in your $PATH. Copy `mok` to that location:
 
 ```bash
-git clone https://github.com/bashtools/mok.git
-cd mok
-sudo make install
-```
-```
-export PATH=/usr/local/bin:$PATH
+curl --output-dir ~/.local/bin -O https://github.com/bashtools/mok/blob/master/package/mok
+chmod +x ~/.local/bin/mok
 ```
 
 *First use*
