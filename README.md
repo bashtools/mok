@@ -13,12 +13,20 @@ Current kubernetes version: 1.31
 
 *Install*
 
-On Fedora `~/local/bin` should be in your $PATH. Copy `mok` to that location:
+Use `curl` and download `mok` to `~/.local/bin`:
 
 ```bash
 curl --output-dir ~/.local/bin -O https://github.com/bashtools/mok/blob/master/package/mok
 mkdir -p ~/.local/bin
 chmod +x ~/.local/bin/mok
+```
+
+or use `git` and `make` and install to `/usr/local/bin`:
+
+```bash
+git clone https://github.com/bashtools/mok.git
+cd mok
+sudo make install
 ```
 
 *First use*
