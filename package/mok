@@ -428,7 +428,7 @@ _PA_new
 # Args: None expected.
 _GL_new() {
 
-  declare -rg MOKVERSION="0.8.15"
+  declare -rg MOKVERSION="0.8.16"
   declare -rg K8SVERSION="1.31.1"
   declare -rg GO_VERSION="1.23.2"
 
@@ -539,7 +539,7 @@ _ER_new || exit 1
 # shellcheck shell=bash disable=SC2148
 # UT - Utilities
 
-# _UT is an associative array that holds data specific to shared utilities.
+# _UT is an associative array that holds data specific to general utilities.
 declare -A _UT
 
 # Declare externally defined global variables ---------------------------------
@@ -926,7 +926,7 @@ _GC_new || exit 1
 # shellcheck shell=bash disable=SC2148
 # EX - EXec
 
-# EX is an associative array that holds data specific to the get cluster command.
+# EX is an associative array that holds data specific to the exec cluster command.
 declare -A _EX
 
 # Declare externally defined variables ----------------------------------------
@@ -1098,7 +1098,7 @@ _EX_new || exit 1
 # shellcheck shell=bash disable=SC2148
 # DC - Delete Cluster
 
-# _DC is an associative array that holds data specific to the get cluster command.
+# _DC is an associative array that holds data specific to deleting a cluster.
 declare -A _DC
 
 # Declare externally defined variables ----------------------------------------
@@ -2240,7 +2240,7 @@ EnD
 # shellcheck shell=bash disable=SC2148
 # CU - Container Utilities
 
-# _CU is an associative array that holds data specific to containers.
+# _CU is an associative array that holds data specific to container utils.
 declare -A _CU
 
 # Declare externally defined variables ----------------------------------------
@@ -2738,6 +2738,8 @@ _BI_modify_container_image() {
   # Delete container, just in case it was left behind
   docker stop -t 5 mok-build-modify &>/dev/null
   docker rm mok-build-modify &>/dev/null
+
+  CC_set_clustername "build" || err || return
 
   # Start container
   CU_create_container "mok-build-modify" "mok-build-modify" "${K8SVERSION}" ||

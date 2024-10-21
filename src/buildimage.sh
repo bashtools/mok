@@ -225,6 +225,8 @@ _BI_modify_container_image() {
   docker stop -t 5 mok-build-modify &>/dev/null
   docker rm mok-build-modify &>/dev/null
 
+  CC_set_clustername "build" || err || return
+
   # Start container
   CU_create_container "mok-build-modify" "mok-build-modify" "${K8SVERSION}" ||
     return
