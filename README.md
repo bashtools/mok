@@ -17,6 +17,7 @@ On Fedora `~/local/bin` should be in your $PATH. Copy `mok` to that location:
 
 ```bash
 curl --output-dir ~/.local/bin -O https://github.com/bashtools/mok/blob/master/package/mok
+mkdir -p ~/.local/bin
 chmod +x ~/.local/bin/mok
 ```
 
