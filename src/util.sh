@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=SC2148
 # UT - Utilities
 
-# _UT is an associative array that holds data specific to shared utilities.
+# _UT is an associative array that holds data specific to general utilities.
 declare -A _UT
 
 # Declare externally defined global variables ---------------------------------

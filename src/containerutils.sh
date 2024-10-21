@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=SC2148
 # CU - Container Utilities
 
-# _CU is an associative array that holds data specific to containers.
+# _CU is an associative array that holds data specific to container utils.
 declare -A _CU
 
 # Declare externally defined variables ----------------------------------------

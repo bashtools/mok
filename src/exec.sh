@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=SC2148
 # EX - EXec
 
-# EX is an associative array that holds data specific to the get cluster command.
+# EX is an associative array that holds data specific to the exec cluster command.
 declare -A _EX
 
 # Declare externally defined variables ----------------------------------------
