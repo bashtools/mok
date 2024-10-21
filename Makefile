@@ -1,8 +1,8 @@
-VERSION = 0.8.12
+VERSION = 0.8.15
 K8SVERSION = 1.31.1
 
 .PHONY: all
-all: mok.deploy tags
+all: mok.deploy package tags
 
 mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
@@ -14,6 +14,10 @@ mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 		) >../mok.deploy
 	chmod +x mok.deploy
 	# cp mok.deploy package/
+
+.PHONY: package
+package: mok.deploy
+	cp -v mok.deploy package/mok
 
 .PHONY: install
 install: all
