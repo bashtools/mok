@@ -5,13 +5,13 @@
 
 Current kubernetes version: 1.31
 
-*Requirements*
+## Requirements
 
 * Fedora 40
 * Podman or Docker
 * 5 GB of free disk space
 
-*Install*
+## Install
 
 Use `curl` and download `mok` to `~/.local/bin`:
 
@@ -29,20 +29,20 @@ cd mok
 sudo make install
 ```
 
-*First use*
+### First use
 
 ```bash
 # Takes around 10 minutes
 sudo mok build image
 ```
 
-*Create a multi node kuberenetes cluster*
+### Create a multi node kuberenetes cluster
 
 ```bash
 sudo mok create cluster myk8s --masters 1 --workers 1
 ```
 
-*Run some kubectl commands*
+### Run some kubectl commands
 
 ```bash
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
@@ -55,20 +55,20 @@ kubectl get pods --all-namespaces
 kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ```
 
-*Get help*
+### Get help
 
 ```bash
 sudo mok -h
 sudo mok create -h
 ```
 
-*Delete the cluster*
+### Delete the cluster
 
 ```bash
 sudo mok delete cluster myk8s
 ```
 
-*Uninstall mok completely*
+### Uninstall mok completely
 
 ```bash
 rm ~/.local/bin/mok
