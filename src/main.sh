@@ -51,8 +51,15 @@ MA_main() {
 # MA_register_parser_global_options adds the options callback and usage
 # callback to the Parser.
 MA_register_parser_global_options() {
+  PA_add_state "COMMAND" "version" "END" "MA_version"
   PA_add_option_callback "" "MA_process_global_options"
   PA_add_usage_callback "" "MA_usage"
+}
+
+# MA_version outputs the version information the exits.
+MA_version() {
+  printf 'Version: %s\n' "${MOKVERSION}"
+  exit "${OK}"
 }
 
 # MA_process_global_options is called by the parser when a global option is
@@ -122,11 +129,12 @@ Global options:
   -p     - Plain output. No colours or animations.
  
 Where command can be one of:
-  create - Add item(s) to the system.
-  delete - Delete item(s) from the system.
-  build  - Build item(s) used by the system.
-  get    - Get details about items in the system.
-  exec   - 'Log in' to the container.
+  create  - Add item(s) to the system.
+  delete  - Delete item(s) from the system.
+  build   - Build item(s) used by the system.
+  get     - Get details about items in the system.
+  exec    - 'Log in' to the container.
+  version - Display version information.
 
 For help on a specific command, run:
   mok <command> --help
