@@ -144,8 +144,8 @@ create cluster [flags] options:
                   master nodes so that pods are schedulable on those nodes.
   --tailf - Show the log output whilst creating the cluster.
   --publish - Publish port 6443 for the master node, or the load balancer if
-              it's enabled, to allow external access to the cluster.
-              The IP address of the default route interface is used.
+              it's enabled, for external kubectl access to the cluster. The IP
+              address of the default route interface is added to the cert.
 
 
 EnD
