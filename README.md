@@ -17,7 +17,7 @@ Use `curl` and download `mok` to `~/.local/bin`:
 
 ```bash
 mkdir -p ~/.local/bin
-curl --output-dir ~/.local/bin -O https://github.com/bashtools/mok/blob/master/package/mok
+curl --output-dir ~/.local/bin -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
 chmod +x ~/.local/bin/mok
 ```
 
