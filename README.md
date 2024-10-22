@@ -16,8 +16,9 @@ Current kubernetes version: 1.31
 Use `curl` and download `mok` to `/usr/local/bin`:
 
 ```bash
-curl --output-dir /usr/local/bin/mok -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
-chmod +x /usr/local/bin/mok
+curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
+chmod +x mok
+sudo mv mok /usr/local/bin/
 ```
 
 or use `git` and `make` and install to `/usr/local/bin`:
