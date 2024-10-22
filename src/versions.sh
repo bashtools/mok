@@ -13,9 +13,9 @@ declare OK ERROR STDERR TRUE
 # Args: arg1 - the container to set up.
 _CC_set_up_master_node_v1_30_0() {
 
-  local setupfile lbaddr certSANs="{}" certkey masternum t
+  local setupfile lbaddr certSANs="{}" certkey masternum t lbip
   # Set by _CC_get_master_join_details:
-  local cahash token masterip
+  local cahash token masterip 
 
   setupfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"${STDERR}"
@@ -31,9 +31,8 @@ _CC_set_up_master_node_v1_30_0() {
       # This is the first master node
 
       # Sets cahash, token, and masterip:
-      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
-      certSANs="
-  certSANs: [ '${lbaddr}' ]"
+      lbip=$(CU_get_container_ip "${_CC[clustername]}-lb")
+      lbaddr=", '${lbip}'"
       uploadcerts="--upload-certs"
       certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
@@ -58,6 +57,11 @@ _CC_set_up_master_node_v1_30_0() {
       eval "${t}"
     fi
   fi
+
+  # Always set certSANs for the host
+  hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
+  certSANs="
+  certSANs: [ '${hostaddr}'${lbaddr} ]"
 
   # Apply the dns hack if there are no workers (single node cluster)
   if [[ ${_CC[numworkers]} -eq 0 ]]; then

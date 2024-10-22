@@ -16,6 +16,16 @@ CC_clustername() {
   printf '%s' "${_CC[clustername]}"
 }
 
+# CC_publish getter outputs the publish array item.
+CC_publish() {
+  printf '%s' "${_CC[publish]}"
+}
+
+# CC-withlb getter outputs the withlb array item.
+CC_withlb() {
+  printf '%s' "${_CC[withlb]}"
+}
+
 # CC_set_clustername setter sets the clustername array item.
 CC_set_clustername() {
   _CC[clustername]="$1"
@@ -80,6 +90,10 @@ CC_process_options() {
     _CC[tailf]="${TRUE}"
     return "${OK}"
     ;;
+  --publish)
+    _CC[publish]="${TRUE}"
+    return
+    ;;
   *)
     CC_usage
     printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
@@ -129,6 +143,10 @@ create cluster [flags] options:
                   is zero then the master node taint will be removed from
                   master nodes so that pods are schedulable on those nodes.
   --tailf - Show the log output whilst creating the cluster.
+  --publish - Publish port 6443 for the master node, or the load balancer if
+              it's enabled, to allow external access to the cluster.
+              The IP address of the default route interface is used.
+
 
 EnD
 }
@@ -197,6 +215,7 @@ _CC_new() {
   _CC[clustername]=
   _CC[nummasters]=0
   _CC[numworkers]=0
+  _CC[publish]=0
   _CC[k8sver]="${K8SVERSION}"
 
   # Program the parser's state machine

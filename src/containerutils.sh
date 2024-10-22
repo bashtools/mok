@@ -124,7 +124,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs systemd_always clustername
+  local imagename img allimgs systemd_always clustername parg pval
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -178,12 +178,27 @@ EnD
     }
   }
 
+  # Docker does not have the --systemd option
   [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
+
+  [[ $(CC_publish) == "${TRUE}" ]] && {
+    if [[ $(CC_withlb) == "${TRUE}" ]]; then
+      if echo "$1" | grep -qs -- '-lb$'; then
+        parg='-p'
+        pval='6443:6443'
+      fi
+    else
+      if echo "$1" | grep -qs -- '-master-1$'; then
+        parg='-p'
+        pval='6443:6443'
+      fi
+    fi
+  }
 
   docker run --privileged ${systemd_always} \
     --network "${clustername}_network" \
     -v /lib/modules:/lib/modules:ro \
-    --detach \
+    --detach ${parg} ${pval} \
     --name "$1" \
     --hostname "$1" \
     --label "$2" \
