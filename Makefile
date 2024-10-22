@@ -2,7 +2,7 @@ VERSION = 0.8.17
 K8SVERSION = 1.31.1
 
 .PHONY: all
-all: mok.deploy package tags
+all: mok.deploy tags
 
 mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
