@@ -71,10 +71,10 @@ sudo mok delete cluster myk8s
 ### Uninstall mok completely
 
 ```bash
-rm ~/.local/bin/mok
-# or
-rm -rf mok/
 sudo rm /usr/local/bin/mok
+
+# If you used git and make delete the git repo
+rm -rf mok/
 ```
 
 Then delete the podman/docker images that were built by `mok build`.
