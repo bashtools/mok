@@ -428,7 +428,7 @@ _PA_new
 # Args: None expected.
 _GL_new() {
 
-  declare -rg MOKVERSION="0.8.17"
+  declare -rg MOKVERSION="0.8.18"
   declare -rg K8SVERSION="1.31.1"
   declare -rg GO_VERSION="1.23.2"
 
@@ -1280,6 +1280,16 @@ CC_clustername() {
   printf '%s' "${_CC[clustername]}"
 }
 
+# CC_publish getter outputs the publish array item.
+CC_publish() {
+  printf '%s' "${_CC[publish]}"
+}
+
+# CC-withlb getter outputs the withlb array item.
+CC_withlb() {
+  printf '%s' "${_CC[withlb]}"
+}
+
 # CC_set_clustername setter sets the clustername array item.
 CC_set_clustername() {
   _CC[clustername]="$1"
@@ -1344,6 +1354,10 @@ CC_process_options() {
     _CC[tailf]="${TRUE}"
     return "${OK}"
     ;;
+  --publish)
+    _CC[publish]="${TRUE}"
+    return
+    ;;
   *)
     CC_usage
     printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
@@ -1393,6 +1407,10 @@ create cluster [flags] options:
                   is zero then the master node taint will be removed from
                   master nodes so that pods are schedulable on those nodes.
   --tailf - Show the log output whilst creating the cluster.
+  --publish - Publish port 6443 for the master node, or the load balancer if
+              it's enabled, to allow external access to the cluster.
+              The IP address of the default route interface is used.
+
 
 EnD
 }
@@ -1461,6 +1479,7 @@ _CC_new() {
   _CC[clustername]=
   _CC[nummasters]=0
   _CC[numworkers]=0
+  _CC[publish]=0
   _CC[k8sver]="${K8SVERSION}"
 
   # Program the parser's state machine
@@ -1978,7 +1997,7 @@ declare OK ERROR STDERR TRUE
 # Args: arg1 - the container to set up.
 _CC_set_up_master_node_v1_30_0() {
 
-  local setupfile lbaddr certSANs="{}" certkey masternum t
+  local setupfile lbaddr certSANs="{}" certkey masternum t lbip
   # Set by _CC_get_master_join_details:
   local cahash token masterip
 
@@ -1996,9 +2015,8 @@ _CC_set_up_master_node_v1_30_0() {
       # This is the first master node
 
       # Sets cahash, token, and masterip:
-      lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb")
-      certSANs="
-  certSANs: [ '${lbaddr}' ]"
+      lbip=$(CU_get_container_ip "${_CC[clustername]}-lb")
+      lbaddr=", '${lbip}'"
       uploadcerts="--upload-certs"
       certkey="CertificateKey: f8802e114ef118304e561c3acd4d0b543adc226b7a27f675f56564185ffe0c07"
 
@@ -2023,6 +2041,11 @@ _CC_set_up_master_node_v1_30_0() {
       eval "${t}"
     fi
   fi
+
+  # Always set certSANs for the host whether we need it or not
+  hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
+  certSANs="
+  certSANs: [ '${hostaddr}'${lbaddr} ]"
 
   # Apply the dns hack if there are no workers (single node cluster)
   if [[ ${_CC[numworkers]} -eq 0 ]]; then
@@ -2363,7 +2386,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs systemd_always clustername
+  local imagename img allimgs systemd_always clustername parg pval
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -2417,12 +2440,27 @@ EnD
     }
   }
 
+  # Docker does not have the --systemd option
   [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
+
+  [[ $(CC_publish) == "${TRUE}" ]] && {
+    if [[ $(CC_withlb) == "${TRUE}" ]]; then
+      if echo "$1" | grep -qs -- '-lb$'; then
+        parg='-p'
+        pval='6443:6443'
+      fi
+    else
+      if echo "$1" | grep -qs -- '-master-1$'; then
+        parg='-p'
+        pval='6443:6443'
+      fi
+    fi
+  }
 
   docker run --privileged ${systemd_always} \
     --network "${clustername}_network" \
     -v /lib/modules:/lib/modules:ro \
-    --detach \
+    --detach ${parg} ${pval} \
     --name "$1" \
     --hostname "$1" \
     --label "$2" \

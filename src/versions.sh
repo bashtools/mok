@@ -15,7 +15,7 @@ _CC_set_up_master_node_v1_30_0() {
 
   local setupfile lbaddr certSANs="{}" certkey masternum t lbip
   # Set by _CC_get_master_join_details:
-  local cahash token masterip 
+  local cahash token masterip
 
   setupfile=$(mktemp -p /var/tmp) || {
     printf 'ERROR: mktmp failed.\n' >"${STDERR}"
@@ -58,7 +58,7 @@ _CC_set_up_master_node_v1_30_0() {
     fi
   fi
 
-  # Always set certSANs for the host
+  # Always set certSANs for the host whether we need it or not
   hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
   certSANs="
   certSANs: [ '${hostaddr}'${lbaddr} ]"
