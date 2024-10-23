@@ -341,7 +341,7 @@ _CC_setup_master_nodes() {
 
   declare -i int=0 r
 
-  local labelkey runlogfile
+  local labelkey runlogfile lbaddr hostaddr
   labelkey=$(CU_labelkey) || err || return
 
   for int in $(seq 1 "$1"); do
@@ -363,7 +363,13 @@ _CC_setup_master_nodes() {
   # For now, copy admin.conf from master to /var/tmp/admin-CLUSTERNAME.conf
 
   if [[ -z ${_CC[skipmastersetup]} ]]; then
-    if [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
+    if [[ ${_CC[publish]} -eq ${TRUE} ]]; then
+      hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
+      docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
+        "/var/tmp/admin-${_CC[clustername]}.conf" >/dev/null || err || return
+      sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${hostaddr}"'\2#' \
+        "/var/tmp/admin-${_CC[clustername]}.conf"
+    elif [[ ${_CC[withlb]} -eq ${TRUE} ]]; then
       lbaddr=$(CU_get_container_ip "${_CC[clustername]}-lb") || err || return
       docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
         "/var/tmp/admin-${_CC[clustername]}.conf" >/dev/null || err || return
