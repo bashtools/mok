@@ -7,9 +7,9 @@ all: mok.deploy tags
 mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
 	cd src && ( echo '#!/usr/bin/env bash'; cat \
-		main.sh lib/parser.sh globals.sh error.sh util.sh getcluster.sh \
+		lib/parser.sh globals.sh error.sh util.sh getcluster.sh \
 		exec.sh deletecluster.sh createcluster.sh versions.sh containerutils.sh \
-		buildimage.deploy lib/JSONPath.sh; \
+		buildimage.deploy lib/JSONPath.sh main.sh; \
 		printf 'if [ "$$0" = "$${BASH_SOURCE[0]}" ] || [ -z "$${BASH_SOURCE[0]}" ]; then\n  MA_main "$$@"\nfi\n' \
 		) >../mok.deploy
 	chmod +x mok.deploy

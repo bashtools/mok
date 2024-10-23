@@ -234,6 +234,10 @@ _CC_new() {
   # Set up the parser's usage callbacks
   PA_add_usage_callback "create" "CC_usage" || return
   PA_add_usage_callback "createcluster" "CC_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "createcluster" "CC_run"
+  PA_add_run_callback "createclusters" "CC_run"
 }
 
 # CC_sanity_checks is expected to run some quick and simple checks to see if it

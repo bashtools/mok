@@ -153,6 +153,10 @@ _GC_new() {
   PA_add_usage_callback "get" "GC_usage" || return
   PA_add_usage_callback "getcluster" "GC_usage" || return
   PA_add_usage_callback "getclusters" "GC_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "getcluster" "GC_run"
+  PA_add_run_callback "getclusters" "GC_run"
 }
 
 # GC_sanity_checks is expected to run some quick and simple checks to

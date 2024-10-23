@@ -132,6 +132,9 @@ _DC_new() {
   # Set up the parser's usage callbacks
   PA_add_usage_callback "delete" "DC_usage" || return
   PA_add_usage_callback "deletecluster" "DC_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "deletecluster" "DC_run"
 }
 
 # DC_sanity_checks is expected to run some quick and simple checks to see if it

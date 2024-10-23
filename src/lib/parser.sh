@@ -82,6 +82,15 @@ PA_add_state() {
   _PA[statecallbacks]+="$1,$2,$3,$4 "
 }
 
+# PA_add_run_callback adds a callback to the list of callbacks used for
+# running the user defined entrypoint function.
+# Args: arg1 - The value of the state to match. Probably like:
+#              "commandsubcommand" "function"
+#       arg2 - The function to call.
+PA_add_run_callback() {
+  _PA[runcallbacks]+="$1,$2 "
+}
+
 # PA_run implements an interleaved state machine to process the
 # user request. It allows for strict checking of arguments and args. All
 # command line arguments are processed in order from left to right.
@@ -98,6 +107,8 @@ PA_add_state() {
 #
 # Args: arg1-N - The arguments given to mok by the user on the command line
 PA_run() {
+
+  local retval=${OK}
 
   set -- "$@"
   local ARGN=$# ARGNUM=0 retval=0
@@ -160,6 +171,17 @@ PA_run() {
     ARGN=$((ARGN - 1))
   done
 
+  # Run the user defined entrypoint function:
+  for item in ${_PA[runcallbacks]}; do
+    IFS=, read -r stateval func <<<"${item}"
+    [[ ${stateval} == "${_PA[command]}${_PA[subcommand]}" ]] && {
+      eval "${func}" || retval=$?
+      return "${retval}"
+    }
+  done
+
+  PA_usage
+
   return "${OK}"
 }
 
@@ -191,6 +213,8 @@ _PA_new() {
   _PA[state]="COMMAND"
   _PA[optscallbacks]=
   _PA[usagecallbacks]=
+  _PA[statecallbacks]=
+  _PA[runcallbacks]=
   # The return value if the caller asked for an extra shift:
   _PA[shift]=126
 }
