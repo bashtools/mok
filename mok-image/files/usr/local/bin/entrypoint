@@ -436,7 +436,7 @@ fix_certificate() {
   # This is necessary because the old one doesn't match the current IP.
   log_info 'clearing and regenerating the certificate for serving the Kubernetes API'
   rm -f ${apiserver_crt_file} ${apiserver_key_file}
-  kubeadm init phase certs apiserver --config /kind/kubeadm.conf
+  kubeadm init phase certs apiserver --config /mok/kubeadm.yaml
 }
 
 enable_network_magic(){
@@ -489,15 +489,15 @@ enable_network_magic(){
     /etc/kubernetes/manifests/kube-scheduler.yaml
     /etc/kubernetes/controller-manager.conf
     /etc/kubernetes/scheduler.conf
-    /kind/kubeadm.conf
+    /mok/kubeadm.yaml
     /var/lib/kubelet/kubeadm-flags.env
   )
   local should_fix_certificate=false
   # fixup IPs in manifests ...
   curr_ipv4="$( (head -n1 <(timeout 5 getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   log_info "detected IPv4 address: ${curr_ipv4}"
-  if [ -f /kind/old-ipv4 ]; then
-    old_ipv4=$(cat /kind/old-ipv4)
+  if [ -f /mok/old-ipv4 ]; then
+    old_ipv4=$(cat /mok/old-ipv4)
     log_info "detected old IPv4 address: ${old_ipv4}"
     # sanity check that we have a current address
     if [[ -z $curr_ipv4 ]]; then
@@ -516,14 +516,14 @@ enable_network_magic(){
     fi
   fi
   if [[ -n $curr_ipv4 ]]; then
-    echo -n "${curr_ipv4}" >/kind/old-ipv4
+    echo -n "${curr_ipv4}" >/mok/old-ipv4
   fi
 
   # do IPv6
   curr_ipv6="$( (head -n1 <(timeout 5 getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   log_info "detected IPv6 address: ${curr_ipv6}"
-  if [ -f /kind/old-ipv6 ]; then
-    old_ipv6=$(cat /kind/old-ipv6)
+  if [ -f /mok/old-ipv6 ]; then
+    old_ipv6=$(cat /mok/old-ipv6)
     log_info "detected old IPv6 address: ${old_ipv6}"
     # sanity check that we have a current address
     if [[ -z $curr_ipv6 ]]; then
@@ -541,7 +541,7 @@ enable_network_magic(){
     fi
   fi
   if [[ -n $curr_ipv6 ]]; then
-    echo -n "${curr_ipv6}" >/kind/old-ipv6
+    echo -n "${curr_ipv6}" >/mok/old-ipv6
   fi
 
   if $should_fix_certificate; then
