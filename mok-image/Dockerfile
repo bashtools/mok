@@ -31,8 +31,10 @@ ARG CRIO_VERSION=v1.31
 # all non-scripts are 0644 (rw- r-- r--)
 COPY --chmod=0755 files/usr/local/bin/* /usr/local/bin/
 COPY --chmod=0644 files/kind/ /kind/
+COPY --chmod=0644 files/mok/ /mok/
 # COPY only applies to files, not the directory itself, so the permissions are
 # fixed in RUN below with a chmod.
+COPY --chmod=0755 files/mok/ /mok/
 COPY --chmod=0755 files/kind/bin/ /kind/bin/
 COPY --chmod=0644 files/LICENSES/* /LICENSES/*
 COPY --chmod=0644 files/etc/crictl.yaml /etc/

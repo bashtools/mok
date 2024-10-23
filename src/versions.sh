@@ -140,6 +140,9 @@ proxy: {}
 scheduler: {}
 EOF
 
+mkdir -p /mok
+cp kubeadm-init-defaults.yaml /mok/kubeadm.yaml
+
 if [[ -z "${masterip}" ]]; then
   # Run the preflight phase
   kubeadm init \\
