@@ -139,6 +139,9 @@ _EX_new() {
   # Set up the parser's option callbacks
   PA_add_option_callback "exec" "EX_process_options" || return
   PA_add_usage_callback "exec" "EX_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "exec" "EX_run"
 }
 
 # EX_sanity_checks is expected to run some quick and simple checks to

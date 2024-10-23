@@ -19,41 +19,13 @@ MA_program_args() {
 # main is the start point for this application.
 # Args: arg1-N - the command line arguments entered by the user.
 MA_main() {
+  local retval="${OK}"
 
   trap MA_cleanup EXIT
   MA_sanity_checks || return
-  MA_register_parser_global_options || return
-
-  local retval="${OK}"
   PA_run "$@" || retval=$?
-  if [[ ${retval} -eq ${ERROR} ]]; then
-    return "${ERROR}"
-  elif [[ ${retval} -eq ${STOP} ]]; then
-    return "${OK}"
-  fi
 
-  local cmd subcmd
-  cmd=$(PA_command) || err || return
-  subcmd=$(PA_subcommand) || err || return
-  case "${cmd}${subcmd}" in
-  create | createcluster) CC_run ;;
-  delete | deletecluster) DC_run ;;
-  build | buildimage) BI_run ;;
-  get | getcluster | getclusters) GC_run ;;
-  exec) EX_run ;;
-  *)
-    PA_usage
-    printf '\nERROR: No COMMAND specified.\n'
-    ;;
-  esac
-}
-
-# MA_register_parser_global_options adds the options callback and usage
-# callback to the Parser.
-MA_register_parser_global_options() {
-  PA_add_state "COMMAND" "version" "END" "MA_version"
-  PA_add_option_callback "" "MA_process_global_options"
-  PA_add_usage_callback "" "MA_usage"
+  exit "${retval}"
 }
 
 # MA_version outputs the version information the exits.
@@ -101,7 +73,7 @@ MA_sanity_checks() {
 
   local binary
 
-  for binary in tac column tput grep sed; do
+  for binary in tac column tput grep sed ip cut; do
     if ! command -v "${binary}" >&/dev/null; then
       printf 'ERROR: "%s" binary not found in path. Aborting.' "${binary}" \
         >"${STDERR}"
@@ -114,8 +86,7 @@ MA_sanity_checks() {
 }
 
 # MA_usage outputs help text for all components then quits with no error.  This
-# is registered as a callback in the Parser in
-# MA_register_parser_global_options.
+# is registered as a callback in the Parser, see _MA_new
 # Args: None expected.
 MA_usage() {
 
@@ -144,6 +115,15 @@ EnD
 # MA_new sets the initial values for the _MA associative array
 _MA_new() {
   _MA[program_args]="$*"
+
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "version" "END" "MA_version"
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "" "MA_process_global_options"
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "" "MA_usage"
 }
 
 # Initialise _MA

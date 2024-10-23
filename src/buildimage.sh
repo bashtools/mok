@@ -139,6 +139,9 @@ _BI_new() {
   # Set up the parser's usage callbacks
   PA_add_usage_callback "build" "BI_usage" || return
   PA_add_usage_callback "buildimage" "BI_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "buildimage" "BI_run"
 }
 
 # BI_sanity_checks is expected to run some quick and simple checks to
