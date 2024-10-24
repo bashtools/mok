@@ -21,6 +21,8 @@ MA_program_args() {
 MA_main() {
   local retval="${OK}"
 
+  CU_podman_or_docker
+
   trap MA_cleanup EXIT
   MA_sanity_checks || return
   PA_run "$@" || retval=$?
@@ -73,7 +75,13 @@ MA_sanity_checks() {
 
   local binary
 
-  for binary in gawk tac column tput grep sed ip cut; do
+  if [[ ${_CU[podmantype]} == "native" ]]; then
+    binaries="gawk tac column tput grep sed ip cut"
+  else
+    binaries="gawk tac column tput grep sed cut"
+  fi
+
+  for binary in ${binaries}; do
     if ! command -v "${binary}" >&/dev/null; then
       printf 'ERROR: "%s" binary not found in path. Aborting.' "${binary}" \
         >"${STDERR}"

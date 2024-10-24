@@ -271,15 +271,21 @@ _CC_sanity_checks() {
     return "${ERROR}"
   fi
 
-  if [[ -e /proc/sys/net/nf_conntrack_max ]]; then
+  if [[ ${_CU[podmantype]} == "native" && -e /proc/sys/net/nf_conntrack_max ]]; then
     host_max=$(cat /proc/sys/net/nf_conntrack_max)
+  elif [[ ${_CU[podmantype]} == "machine" ]]; then
+    # Lazily assuming the file exists
+    host_max=$(podman machine ssh cat /proc/sys/net/nf_conntrack_max)
   else
     printf '\nWARNING: /proc/sys/net/nf_conntrack_max not found.\n' >"${STDERR}"
     printf '         kube-proxy may not work.\n\n' >"${STDERR}"
   fi
 
-  if [[ -e /proc/cpuinfo ]]; then
+  if [[ ${_CU[podmantype]} == "native" && -e /proc/cpuinfo ]]; then
     cpus=$(grep -cw ^processor /proc/cpuinfo)
+  elif [[ ${_CU[podmantype]} == "machine" ]]; then
+    # Lazily assuming the file exists
+    cpus=$(podman machine ssh cat /proc/cpuinfo | grep -cw ^processor)
   else
     printf '\nWARNING: /proc/cpuinfo not found.\n' >"${STDERR}"
     printf '         I have no idea how many CPUs I have\n' >"${STDERR}"
@@ -300,8 +306,16 @@ _CC_sanity_checks() {
     printf '\nWARNING: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
       "${should_be}" >"${STDERR}"
     printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
-    printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-      "${should_be}" >"${STDERR}"
+    if [[ ${_CU[podmantype]} == "native" ]]; then
+      printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n' \
+        "${should_be}" >"${STDERR}"
+    elif [[ ${_CU[podmantype]} == "machine" ]]; then
+      printf '           podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n' \
+        "${should_be}" >"${STDERR}"
+    else
+      printf 'Internal ERROR. Invalid podman type.\n' >"${STDERR}"
+      return "${ERROR}"
+    fi
   fi
 }
 

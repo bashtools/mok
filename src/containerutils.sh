@@ -209,7 +209,119 @@ EnD
   }
 }
 
+# CU_podman_or_docker checks to see if docker and/or podman are installed and
+# sets the imgprefix and containerrt array members accordingly. It also defines
+# the docker function to run the detected container runtime. Podman is
+# preferred if both are installed.
+# Args: No args expected.
+CU_podman_or_docker() {
+  if type podman &>/dev/null; then
+    _CU[imgprefix]="localhost/"
+    _CU[containerrt]="podman"
+    _CU_podman_checks || return
+
+    # Override docker() to run podman
+    # shellcheck disable=SC2317
+    docker() {
+      podman "$@"
+    }
+  elif type docker &>/dev/null; then
+    _CU[imgprefix]=""
+    _CU[containerrt]="docker"
+    _CU_docker_checks || return
+  else
+    printf 'ERROR: Neither "podman" nor "docker" were found.\n' \
+      >"${STDERR}"
+    printf 'Please install one of "podman" or "docker".\nAborting.\n' \
+      >"${STDERR}"
+    return "${ERROR}"
+  fi
+  return "${OK}"
+}
+
 # Private Functions -----------------------------------------------------------
+
+# _CU_docker_checks checks to see if the current user has permission to write
+# to the docker socket. If not, it prints an error message and exits.
+# Args: No args expected.
+_CU_docker_checks() {
+  if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
+    cat <<EnD >"${STDERR}"
+Not enough permissions to write to 'docker.sock'.
+
+Please use 'sudo' to run this command.
+
+$ sudo mok $(MA_program_args)
+
+Or set up an alias, for example:
+
+$ alias mok="sudo mok"
+
+Then run the command again.
+EnD
+    exit "${ERROR}"
+  fi
+
+  return "${OK}"
+}
+
+# _CU_podman_checks sets the _CU[podmantype] member to "native" or "machine"
+# depending on whether this is linux or macos. We assume linux won't be using
+# a podman machine, and macos will always be using a podman machine.
+# Args: No args expected.
+_CU_podman_checks() {
+  local info running
+
+  if [[ -e /proc/sys/kernel/hostname ]]; then
+    # We're on linux
+    _CU[podmantype]="native"
+    _CU_podman_native_checks || return
+  elif [[ -d /System/Library/CoreServices ]]; then
+    # We're on macOS
+    [[ $(id -u) -eq 0 ]] && {
+      printf 'ERROR: Cannot run mok as root on macOS.\n' >"${STDERR}"
+      exit "${ERROR}"
+    }
+
+    info=$(podman machine list --format json) || err || return
+    running=$(JSONPath -b '..Running' <<<"${info}") || err || return
+
+    if [[ ${running} == "true" ]]; then
+      _CU[podmantype]="machine"
+    else
+      printf 'ERROR: Podman machine is not running. Aborting.\n' >"${STDERR}"
+      exit "${ERROR}"
+    fi
+
+    # shellcheck disable=SC2317
+    ip() {
+      podman machine ssh ip "$@"
+    }
+  else
+    printf 'ERROR: Unknown OS. Aborting.\n' >"${STDERR}"
+    exit "${ERROR}"
+  fi
+}
+
+# _CU_podman_native_checks checks to see if the current user is root. If not,
+# it prints an error message and exits.
+# Args: No args expected.
+_CU_podman_native_checks() {
+  [[ $(id -u) -ne 0 ]] && {
+    cat <<EnD >"${STDERR}"
+Please use 'sudo' to run this command.
+
+$ sudo mok $(MA_program_args)
+
+Or set up an alias, for example:
+
+$ alias mok="sudo mok"
+
+Then run the command again.
+EnD
+    exit "${ERROR}"
+  }
+}
 
 # _CU_new sets the initial values for the Container Utils associative array.
 # Args: None expected.
@@ -218,68 +330,9 @@ _CU_new() {
   _CU[labelkey]="MokCluster"
   _CU[containerrt]=
 
-  _CU_podman_or_docker
-}
-
-# CU_podman_or_docker checks to see if docker and/or podman are installed and
-# sets the imgprefix and containerrt array members accordingly. It also defines
-# the docker function to run the detected container runtime. Docker is
-# preferred if both are installed.
-# Args: No args expected.
-_CU_podman_or_docker() {
-
-  local id
-
-  if type podman &>/dev/null; then
-    _CU[imgprefix]="localhost/"
-    _CU[containerrt]="podman"
-    local id
-    id=$(id -u)
-    [[ ${id} -ne 0 ]] && {
-      cat <<EnD >"${STDERR}"
-Please use 'sudo' to run this command.
-
-  $ sudo mok $(MA_program_args)
-
-Or set up an alias, for example:
-
-  $ alias mok="sudo mok"
-
-Then run the command again.
-EnD
-      return "${ERROR}"
-    }
-    docker() {
-      podman "$@"
-    }
-  elif type docker &>/dev/null; then
-    _CU[imgprefix]=""
-    _CU[containerrt]="docker"
-    if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
-      cat <<EnD >"${STDERR}"
-Not enough permissions to write to 'docker.sock'.
-
-Please use 'sudo' to run this command.
-
-  $ sudo mok $(MA_program_args)
-
-Or set up an alias, for example:
-
-  $ alias mok="sudo mok"
-
-Then run the command again.
-EnD
-      return "${ERROR}"
-    fi
-  else
-    printf 'ERROR: Neither "podman" nor "docker" were found.\n' \
-      >"${STDERR}"
-    printf 'Please install one of "podman" or "docker".\nAborting.\n' \
-      >"${STDERR}"
-    return "${ERROR}"
-  fi
-
-  return "${OK}"
+  # _CU[podmantype] will only be set only if _CU[containerrt]=podman.
+  # podmantype will be "native" or "machine".
+  _CU[podmantype]=
 }
 
 # Initialise _CU
