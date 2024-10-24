@@ -73,7 +73,7 @@ MA_sanity_checks() {
 
   local binary
 
-  for binary in tac column tput grep sed ip cut; do
+  for binary in gawk tac column tput grep sed ip cut; do
     if ! command -v "${binary}" >&/dev/null; then
       printf 'ERROR: "%s" binary not found in path. Aborting.' "${binary}" \
         >"${STDERR}"
