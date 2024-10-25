@@ -8,7 +8,7 @@ Current kubernetes version: 1.31
 ## Requirements
 
 **Fedora 40 Desktop or Server on x86_64 or AMD64**
-* Podman or Docker
+* Podman
 * 5 GB of free disk space
 
 **MacOS 14.7 (Sonoma) on M1 Pro chip**
@@ -85,7 +85,7 @@ sudo rm /usr/local/bin/mok
 rm -rf mok/
 ```
 
-Then delete the podman/docker images that were built by `mok build`.
+Then delete the podman images that were built by `mok build`.
 
 ## Known Issues
 
