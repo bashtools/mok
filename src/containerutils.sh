@@ -28,6 +28,11 @@ CU_labelkey() {
   printf '%s' "${_CU[labelkey]}"
 }
 
+# CU_podmantype getter outputs the container runtime type (native or machine).
+CU_podmantype() {
+  printf '%s' "${_CU[podmantype]}"
+}
+
 # Public Functions ------------------------------------------------------------
 
 # CU_cleanup removes artifacts that were created during execution. Currently
