@@ -1447,14 +1447,26 @@ _CC_sanity_checks() {
     should_be=$((32768*cpus))
   fi
   if [[ ${should_be} -ne $host_max ]]; then
-    printf '\nWARNING: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
+    printf '\nERROR: /proc/sys/net/nf_conntrack_max should be set to %d.\n' \
       "${should_be}" >"${STDERR}"
-    printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
+    printf '     kube-proxy will not start with an incorrect nf_conntrack_max.\n' >"${STDERR}"
+    printf '     To fix this, run the following command:\n\n' >"${STDERR}"
     if [[ ${_CU[podmantype]} == "native" ]]; then
-      printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
+      printf '       sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     elif [[ ${_CU[podmantype]} == "machine" ]]; then
-      printf '           podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
+      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
+        "${should_be}" >"${STDERR}"
+      printf '     If the above command fails, you may have to recreate the podman machine, for example:\n\n' >"${STDERR}"
+      tput setaf 1 # red
+      printf '     WARNING: The following commands will destroy your podman machine and all its data.\n' >"${STDERR}"
+      printf '              All existing pods and containers will be gone.\n\n' >"${STDERR}"
+      tput sgr0 # reset
+      printf '       podman machine stop\n' >"${STDERR}"
+      printf '       podman machine rm\n' >"${STDERR}"
+      printf '       podman machine init --now --rootful --user-mode-networing\n' >"${STDERR}"
+      printf '       podman machine ssh modprobe nf_conntrack\n' >"${STDERR}"
+      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     else
       printf 'Internal ERROR. Invalid podman type.\n' >"${STDERR}"
