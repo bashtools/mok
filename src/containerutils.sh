@@ -250,6 +250,11 @@ CU_podman_or_docker() {
 # to the docker socket. If not, it prints an error message and exits.
 # Args: No args expected.
 _CU_docker_checks() {
+  if [[ ! -e /proc/sys/kernel/hostname ]]; then
+    printf 'ERROR: Docker is currently supported on Linux only'
+    exit "${ERROR}"
+  fi
+
   if docker ps >/dev/stdout 2>&1 | grep -qs 'docker.sock.*permission denied'; then
     cat <<EnD >"${STDERR}"
 Not enough permissions to write to 'docker.sock'.
@@ -267,6 +272,7 @@ EnD
     exit "${ERROR}"
   fi
 
+  _CU[podmantype]="native"
   return "${OK}"
 }
 
