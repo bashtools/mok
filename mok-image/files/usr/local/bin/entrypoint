@@ -549,6 +549,22 @@ enable_network_magic(){
   fi
 }
 
+fix_local_dns_masq() {
+  # For single node 'clusters' the outbound DNS from pods is MASQ-ed but the
+  # reply from DNS is not, since it's on the same network and the packet is quietly
+  # dropped. Using tcpdump we can see this in action:
+  # 15:31:53.003522 veth0e40f53a P   IP 10.244.0.6.33380 > 10.96.0.10.domain: 52112+ A? google.com. (28)                                                                                           
+  # 15:31:53.003524 cni0  In  IP 10.244.0.6.33380 > 10.96.0.10.domain: 52112+ A? google.com. (28)
+  # ...
+  # 15:31:53.016581 veth990eaef6 P   IP 10.244.0.2.domain > 10.244.0.6.33380: 52112 1/0/0 A 142.250.200.46 (54)
+  # 15:31:53.016584 veth0e40f53a Out IP 10.244.0.2.domain > 10.244.0.6.33380: 52112 1/0/0 A 142.250.200.46 (54)
+  # The DNS packets went to 10.96.0.10 but were returned from 10.244.0.2, which, to
+  # the pods point of view is a packet reply it didn't ask for.
+  # Adding a MASQ rule manually fixes this:
+  iptables -t nat -A POSTROUTING -s 10.244.0.0/24 -d 10.244.0.0/24 -p udp --dport 53 -j MASQUERADE
+  iptables -t nat -A POSTROUTING -s 10.244.0.0/24 -d 10.244.0.0/24 -p tcp --dport 53 -j MASQUERADE
+}
+
 # validate state
 validate_userns
 
@@ -562,6 +578,7 @@ fix_machine_id
 fix_product_name
 fix_product_uuid
 select_iptables
+fix_local_dns_masq
 enable_network_magic
 
 # we want the command (expected to be systemd) to be PID1, so exec to it
