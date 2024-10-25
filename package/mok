@@ -1415,9 +1415,9 @@ _CC_sanity_checks() {
     return "${ERROR}"
   fi
 
-  if [[ ${_CU[podmantype]} == "native" && -e /proc/sys/net/nf_conntrack_max ]]; then
+  if [[ $(CU_podmantype) == "native" && -e /proc/sys/net/nf_conntrack_max ]]; then
     host_max=$(cat /proc/sys/net/nf_conntrack_max)
-  elif [[ ${_CU[podmantype]} == "machine" ]]; then
+  elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
     host_max=$(podman machine ssh cat /proc/sys/net/nf_conntrack_max)
   else
@@ -1425,9 +1425,9 @@ _CC_sanity_checks() {
     printf '         kube-proxy may not work.\n\n' >"${STDERR}"
   fi
 
-  if [[ ${_CU[podmantype]} == "native" && -e /proc/cpuinfo ]]; then
+  if [[ $(CU_podmantype) == "native" && -e /proc/cpuinfo ]]; then
     cpus=$(grep -cw ^processor /proc/cpuinfo)
-  elif [[ ${_CU[podmantype]} == "machine" ]]; then
+  elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
     cpus=$(podman machine ssh cat /proc/cpuinfo | grep -cw ^processor)
   else
@@ -1451,15 +1451,19 @@ _CC_sanity_checks() {
       "${should_be}" >"${STDERR}"
     printf '         If kube-proxy does not start then try:\n' >"${STDERR}"
     if [[ ${_CU[podmantype]} == "native" ]]; then
-      printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n' \
+      printf '           sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     elif [[ ${_CU[podmantype]} == "machine" ]]; then
-      printf '           podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n' \
+      printf '           podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     else
       printf 'Internal ERROR. Invalid podman type.\n' >"${STDERR}"
       return "${ERROR}"
     fi
+    
+    printf 'Press ENTER to continue or CTRL-C to abort.\n' >"${STDERR}"
+    read -r
+    printf '\n' >"${STDERR}"
   fi
 }
 
@@ -2195,6 +2199,11 @@ CU_imgprefix() {
 # cluster member's container labels for podman or docker.
 CU_labelkey() {
   printf '%s' "${_CU[labelkey]}"
+}
+
+# CU_podmantype getter outputs the container runtime type (native or machine).
+CU_podmantype() {
+  printf '%s' "${_CU[podmantype]}"
 }
 
 # Public Functions ------------------------------------------------------------
