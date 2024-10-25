@@ -7,9 +7,15 @@ Current kubernetes version: 1.31
 
 ## Requirements
 
-* Fedora 40
+**Fedora 40 Desktop or Server on x86_64 or AMD64**
 * Podman or Docker
 * 5 GB of free disk space
+
+**MacOS 14.7 (Sonoma) on M1 Pro chip**
+* Podman
+* 5 GB of free disk space
+
+Mok may work on other versions of Linux or MacOS but I have only tested it on the above.
 
 ## Install
 
@@ -31,15 +37,17 @@ sudo make install
 
 ### First use
 
+For linux users: `alias mok="sudo /usr/local/bin/mok"`
+
 ```bash
 # Takes around 10 minutes
-sudo mok build image
+mok build image
 ```
 
 ### Create a multi node kuberenetes cluster
 
 ```bash
-sudo mok create cluster myk8s --masters 1 --workers 1
+mok create cluster myk8s --masters 1 --workers 1
 ```
 
 ### Run some kubectl commands
@@ -58,14 +66,14 @@ kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ### Get help
 
 ```bash
-sudo mok -h
-sudo mok create -h
+mok -h
+mok create -h
 ```
 
 ### Delete the cluster
 
 ```bash
-sudo mok delete cluster myk8s
+mok delete cluster myk8s
 ```
 
 ### Uninstall mok completely
@@ -81,7 +89,30 @@ Then delete the podman/docker images that were built by `mok build`.
 
 ## Known Issues
 
+**Fedora and MacOS:**
 * With multiple master nodes only the first master is set up
+* Containers cannot be stopped then restarted
+
+**MacOS only:**
+* A recent version of Bash is required. Use homebrew to install `bash` and
+  `gawk` then add `eval "$(/opt/homebrew/bin/brew shellenv)` to the end of your `.zprofile` or `.bash_profile` so that
+  brew installed files are found first.
+* To be able to use `kubectl` from the host machine and to be able to modify `nf_conntrack_max` the machine needs to be created with:
+  `podman machine init --rootful --user-mode-networing`
+  * This allows a kubernetes cluster to be created with the `--publish` option, for example:
+    ```
+    mok create cluster myk8s 1 0 --publish
+    ```
+    Then the commands in the 'Run some kubectl commands' section above will work without any modification.
+  * `kube-proxy` requires a correctly set `nf_conntrack_max`. If it's incorrect then mok will supply the command to correct it and will also suggest the following commands be run:
+    ```
+    # WARNING - This will delete all your existing pods/containers and anything else in the podman machine:
+    podman machine stop
+    podman machine rm
+    podman machine init --now --rootful --user-mode-networing
+    podman machine ssh modprobe nf_conntrack
+    podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=163840
+    ```
 
 ## Some Features
 
