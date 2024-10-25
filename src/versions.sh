@@ -61,7 +61,7 @@ _CC_set_up_master_node_v1_30_0() {
   # Always set certSANs for the host whether we need it or not
   hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
   certSANs="
-  certSANs: [ '${hostaddr}'${lbaddr} ]"
+  certSANs: [ '${hostaddr}'${lbaddr}, '127.0.0.1', 'localhost' ]"
 
   # Apply the dns hack if there are no workers (single node cluster)
   if [[ ${_CC[numworkers]} -eq 0 ]]; then

@@ -382,7 +382,12 @@ _CC_setup_master_nodes() {
 
   if [[ -z ${_CC[skipmastersetup]} ]]; then
     if [[ ${_CC[publish]} -eq ${TRUE} ]]; then
-      hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
+      # On MacOS we need to use localhost, on linux use the host IP
+      if [[ $(CU_podmantype) == "native" ]]; then
+        hostaddr=$(ip ro get 8.8.8.8 | cut -d" " -f 7) || err || return
+      else
+        hostaddr="localhost"
+      fi
       docker cp "${_CC[clustername]}-master-1:/etc/kubernetes/admin.conf" \
         "/var/tmp/admin-${_CC[clustername]}.conf" >/dev/null || err || return
       sed -i 's#\(server: https://\)[0-9.]*\(:.*\)#\1'"${hostaddr}"'\2#' \
