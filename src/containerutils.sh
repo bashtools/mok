@@ -224,12 +224,6 @@ CU_podman_or_docker() {
     _CU[imgprefix]="localhost/"
     _CU[containerrt]="podman"
     _CU_podman_checks || return
-
-    # Override docker() to run podman
-    # shellcheck disable=SC2317
-    docker() {
-      podman "$@"
-    }
   elif type docker &>/dev/null; then
     _CU[imgprefix]=""
     _CU[containerrt]="docker"
@@ -303,11 +297,6 @@ _CU_podman_checks() {
       printf 'ERROR: Podman machine is not running. Aborting.\n' >"${STDERR}"
       exit "${ERROR}"
     fi
-
-    # shellcheck disable=SC2317
-    ip() {
-      podman machine ssh ip "$@"
-    }
   else
     printf 'ERROR: Unknown OS. Aborting.\n' >"${STDERR}"
     exit "${ERROR}"
@@ -344,6 +333,28 @@ _CU_new() {
   # _CU[podmantype] will only be set only if _CU[containerrt]=podman.
   # podmantype will be "native" or "machine".
   _CU[podmantype]=
+}
+
+# Override `docker` depending on _CU[containerrt]
+docker() {
+  local cmd
+  if [[ "${_CU[containerrt]}" == "podman" ]]; then
+    podman "$@"
+  else
+    cmd=$(which -a docker | tail -n 1)
+    $cmd "$@"
+  fi
+}
+
+# Override `ip` depending on _CU[podmantype]
+ip() {
+  local cmd
+  if [[ "${_CU[podmantype]}" == "machine" ]]; then
+    podman machine ssh ip "$@"
+  else
+    cmd=$(which -a ip | tail -n 1)
+    $cmd "$@"
+  fi
 }
 
 # Initialise _CU
