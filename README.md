@@ -7,11 +7,11 @@ Current kubernetes version: 1.31
 
 ## Requirements
 
-**Fedora 40 Desktop or Server on x86_64 or AMD64**
+**Fedora 40 Desktop/Server on x86_64 or AMD64**
 * Podman
 * 5 GB of free disk space
 
-**MacOS 14.7 (Sonoma) on M1 Pro chip**
+**MacOS 14.7 (Sonoma) on Apple Silicon**
 * Podman
 * 5 GB of free disk space
 
@@ -94,17 +94,20 @@ Then delete the podman images that were built by `mok build`.
 * Containers cannot be stopped then restarted
 
 **MacOS only:**
-* A recent version of Bash is required. Use homebrew to install `bash` and
-  `gawk` then add `eval "$(/opt/homebrew/bin/brew shellenv)` to the end of your `.zprofile` or `.bash_profile` so that
+* A recent version of Bash is required.
+  * Use homebrew to install `bash` and `gawk`
+  * add `eval "$(/opt/homebrew/bin/brew shellenv)` to the end of your `.zprofile` or `.bash_profile` so that
   brew installed files are found first.
 * To be able to use `kubectl` from the host machine and to be able to modify `nf_conntrack_max` the machine needs to be created with:
-  `podman machine init --rootful --user-mode-networing`
+  ```bash
+  podman machine init --rootful --user-mode-networing
+  ```
   * This allows a kubernetes cluster to be created with the `--publish` option, for example:
-    ```
+    ```bash
     mok create cluster myk8s 1 0 --publish
     ```
     Then the commands in the 'Run some kubectl commands' section above will work without any modification.
-  * `kube-proxy` requires a correctly set `nf_conntrack_max`. If it's incorrect then mok will supply the command to correct it and will also suggest the following commands be run:
+* `kube-proxy` requires a correctly set `nf_conntrack_max`. If it's incorrect then mok will supply the command to correct it and will also suggest the following commands be run:
     ```
     # WARNING - This will delete all your existing pods/containers and anything else in the podman machine:
     podman machine stop
