@@ -75,7 +75,7 @@ MA_sanity_checks() {
 
   local binary
 
-  if [[ ${_CU[podmantype]} == "native" ]]; then
+  if [[ $(CU_podmantype) == "native" ]]; then
     binaries="gawk tac column tput grep sed ip cut"
   else
     binaries="gawk tac column tput grep sed cut"

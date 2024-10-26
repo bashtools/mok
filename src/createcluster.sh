@@ -307,10 +307,10 @@ _CC_sanity_checks() {
       "${should_be}" >"${STDERR}"
     printf '     kube-proxy will not start with an incorrect nf_conntrack_max.\n' >"${STDERR}"
     printf '     To fix this, run the following command:\n\n' >"${STDERR}"
-    if [[ ${_CU[podmantype]} == "native" ]]; then
+    if [[ $(CU_podmantype) == "native" ]]; then
       printf '       sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
-    elif [[ ${_CU[podmantype]} == "machine" ]]; then
+    elif [[ $(CU_podmantype) == "machine" ]]; then
       printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
       printf '     If the above command fails, you may have to recreate the podman machine, for example:\n\n' >"${STDERR}"
