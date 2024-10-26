@@ -104,7 +104,8 @@ RUN echo "Enabling / Disabling services ... " \
     && systemctl enable kubelet.service \
     && systemctl enable undo-mount-hacks.service \
     && systemctl mask systemd-binfmt.service \
-    && systemctl enable crio.service
+    && systemctl enable crio.service \
+    && systemctl enable node-address-update.service
 
 RUN echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests

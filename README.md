@@ -91,7 +91,7 @@ Then delete the podman images that were built by `mok build`.
 
 **Fedora and MacOS:**
 * With multiple master nodes only the first master is set up
-* Containers cannot be stopped then restarted
+* Currently only single node clusters can be stopped and restarted
 
 **MacOS only:**
 * A recent version of Bash is required.
