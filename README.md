@@ -7,7 +7,7 @@ Current kubernetes version: 1.31
 
 ## Requirements
 
-**Fedora 40 Desktop/Server on x86_64 or AMD64**
+**Fedora 41 Desktop/Server on x86_64 or AMD64**
 * Podman
 * 5 GB of free disk space
 
