@@ -139,8 +139,9 @@ CU_create_container() {
 
   img=$(BI_baseimagename) || err || return
 
-  local imglocal="${_CU[imgprefix]}local/${img}-v${3}"
-  local imgremote="myownkind/${img}-v${3}"
+  local imglocal="${_CU[imgprefix]}local/${img}"
+  local imgremote="myownkind/${img}"
+  local imgtag="${3}"
 
   # Prefer a locally built container over one downloaded from a registry
   allimgs=$(docker images | tail -n +2) || {
@@ -148,10 +149,10 @@ CU_create_container() {
     err || return
   }
 
-  if echo "${allimgs}" | grep -qs "${imglocal}"; then
-    imagename="${imglocal}"
-  elif echo "${allimgs}" | grep -qs "${imgremote}"; then
-    imagename="${imgremote}"
+  if echo "${allimgs}" | grep -qs "${imglocal} *${imgtag}"; then
+    imagename="${imglocal}:${imgtag}"
+  elif echo "${allimgs}" | grep -qs "${imgremote} *${imgtag}"; then
+    imagename="${imgremote}:${imgtag}"
   else
     cat <<EnD
 ERROR: No container base image found. Use either:

@@ -39,9 +39,10 @@ sudo make install
 
 For linux users: `alias mok="sudo /usr/local/bin/mok"`
 
+Get the latest prebuilt image, which is about 1.2 GiB in size:
+
 ```bash
-# Takes around 10 minutes
-mok build image
+mok build image --get-prebuilt-image
 ```
 
 ### Create a multi node kuberenetes cluster

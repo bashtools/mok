@@ -30,10 +30,6 @@ BI_baseimagename() {
 # Args: None expected.
 BI_usage() {
 
-  # NOTE: This flag to be added back in the future
-  # --get-prebuilt-image - Instead of building a 'node' image
-  #        locally, download it from a container registry instead.
-
   cat <<'EnD'
 BUILD subcommands are:
  
@@ -45,6 +41,8 @@ build image options:
   build image
 
  Flags:
+  --get-prebuilt-image - Instead of building a 'node' image
+         locally, download it from a container registry instead.
   --tailf - Show the build output whilst building.
 
 EnD
@@ -79,11 +77,10 @@ BI_process_options() {
     _BI[tailf]="${TRUE}"
     return "${OK}"
     ;;
-  # NOTE: This flag to be added back in the future
-  # --get-prebuilt-image)
-  #   _BI[useprebuiltimage]="${TRUE}"
-  #   return "${OK}"
-  #   ;;
+  --get-prebuilt-image)
+    _BI[useprebuiltimage]="${TRUE}"
+    return "${OK}"
+    ;;
   *)
     BI_usage
     printf 'ERROR: "%s" is not a valid "build" option.\n' "${1}" \
@@ -161,31 +158,32 @@ _BI_sanity_checks() {
 # Args: No args expected.
 _BI_build_container_image() {
 
-  local cmd retval tagname buildargs text buildtype
+  local cmd retval tagname buildargs text buildtype basename
 
   _BI_create_docker_build_dir || return
 
   buildargs=$(_BI_get_build_args_for_latest) || return
-  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
+  basename="${_BI[baseimagename]}"
+  tagname="${K8SVERSION}"
 
   local imgprefix
   imgprefix=$(CU_imgprefix) || err || return
   if [[ ${_BI[useprebuiltimage]} == "${FALSE}" ]]; then
     buildtype="create"
     cmd="docker build \
-      -t "${imgprefix}local/${tagname}" \
+      -t "${imgprefix}local/${basename}:${tagname}" \
       --force-rm \
       ${buildargs} \
       ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
     text="Creating"
   else
     buildtype="download"
-    cmd="docker pull myownkind/${tagname}"
+    cmd="docker pull docker.io/myownkind/${basename}:${tagname}"
     text="Downloading"
   fi
 
   UT_run_with_progress \
-    "    ${text} base image, '${tagname}'" "${cmd}"
+    "    ${text} base image, '${basename}:${tagname}'" "${cmd}"
 
   retval=$?
   [[ ${retval} -ne ${OK} ]] && {
@@ -235,6 +233,7 @@ _BI_modify_container_image() {
     return
 
   # Wait for crio to become ready
+  local counter
   printf '\n\n ** WAITING FOR CRIO TO BECOME READY **\n\n'
   while ! docker exec mok-build-modify systemctl status crio; do
     sleep 1
@@ -253,10 +252,11 @@ _BI_modify_container_image() {
   docker stop -t 5 "mok-build-modify"
 
   # Write image
-  local imgprefix tagname
+  local imgprefix tagname basename
   imgprefix=$(CU_imgprefix) || err || return
-  tagname="${_BI[baseimagename]}-v${K8SVERSION}"
-  docker commit mok-build-modify "${imgprefix}local/${tagname}" || err || return
+  basename="${_BI[baseimagename]}"
+  tagname="${K8SVERSION}"
+  docker commit mok-build-modify "${imgprefix}local/${basename}:${tagname}" || err || return
 
   # Delete container, just in case it was left behind
   docker stop -t 5 mok-build-modify
