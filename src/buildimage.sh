@@ -38,7 +38,7 @@ BUILD subcommands are:
 build image options:
  
  Format:
-  build image
+  build image [flags]
 
  Flags:
   --get-prebuilt-image - Instead of building a 'node' image
