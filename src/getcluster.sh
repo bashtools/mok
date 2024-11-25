@@ -63,9 +63,9 @@ GC_usage() {
   cat <<'EnD'
 GET subcommands are:
  
-  cluster(s) - list all mok managed clusters.
+  cluster[s] - list all mok managed clusters.
  
-get cluster(s) options:
+get cluster[s] options:
  
  Format:
   get cluster(s) [NAME]
