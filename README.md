@@ -135,9 +135,6 @@ Then delete the podman images that were built by `mok build`.
 
 Bookmark this page with a STAR - it really helps my motivation, thank you!
 
-For updates, feature requests, general help, or to chat, please follow me on Bluesky
-[Mark Clarkson @smorg.co.uk](https://bsky.app/profile/smorg.co.uk).
-
 Contribute to MOK with bug reports or pull requests.
 
 Happy MOKing!
