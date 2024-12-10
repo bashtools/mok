@@ -131,10 +131,7 @@ Then delete the podman images that were built by `mok build`.
 
 * [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)
 
-## Support MOK
+## Support
 
-Bookmark this page with a STAR - it really helps my motivation, thank you!
-
-Contribute to MOK with bug reports or pull requests.
-
-Happy MOKing!
+Follow:
+[Mok on BlueSky](https://bsky.app/profile/github-mok.bsky.social)
