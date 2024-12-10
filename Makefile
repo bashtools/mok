@@ -1,4 +1,4 @@
-VERSION = 0.8.20
+VERSION = 0.8.21
 
 .PHONY: all
 all: mok.deploy tags
