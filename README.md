@@ -3,7 +3,7 @@
 ![image](https://github.com/user-attachments/assets/0750910e-d6da-4c65-92ea-f7bc64b116cc)
 
 
-Current kubernetes version: 1.31.4
+Current kubernetes version: 1.32.0
 
 ## Requirements
 

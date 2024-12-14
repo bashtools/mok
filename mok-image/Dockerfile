@@ -23,7 +23,7 @@
 ARG BASE_IMAGE=debian:bookworm-slim
 FROM $BASE_IMAGE AS base
 
-ARG KUBERNETES_VERSION=v1.31
+ARG KUBERNETES_VERSION=v1.32
 ARG CRIO_VERSION=v1.31
 
 # copy in static files
@@ -134,7 +134,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.1.13"
+ARG RUNC_VERSION="v1.2.3"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
@@ -149,7 +149,7 @@ RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
 FROM go-build AS build-crictl
 ARG TARGETARCH GO_VERSION
 ARG CRI_TOOLS_CLONE_URL="https://github.com/kubernetes-sigs/cri-tools"
-ARG CRICTL_VERSION="v1.31.1"
+ARG CRICTL_VERSION="v1.32.0"
 RUN git clone --filter=tree:0 "${CRI_TOOLS_CLONE_URL}" /cri-tools \
     && cd /cri-tools \
     && git checkout "${CRICTL_VERSION}" \
