@@ -47,9 +47,9 @@ UT_disable_colours() {
   _UT[green]=
   _UT[red]=
   _UT[normal]=
-  _UT[probablysuccess]="PROBABLY SUCCESS (!)"
-  _UT[success]="SUCCESS"
-  _UT[failure]="FAIL"
+  _UT[probablysuccess]="!"
+  _UT[success]="✓"
+  _UT[failure]="✕"
 }
 
 # UT_run_with_progress displays a progress spinner, item text, and a tick or

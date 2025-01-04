@@ -7,11 +7,11 @@ Current kubernetes version: 1.32.0
 
 ## Requirements
 
-**Fedora 41 Desktop/Server on x86_64 or AMD64**
+**MacOS on Apple Silicon (M1, M2, ...)**
 * Podman
 * 5 GB of free disk space
 
-**MacOS 14.7 (Sonoma) on Apple Silicon**
+**Fedora 41 Desktop/Server on x86_64 or AMD64**
 * Podman
 * 5 GB of free disk space
 
@@ -19,7 +19,36 @@ Mok may work on other versions of Linux or MacOS but I have only tested it on th
 
 ## Install
 
-Use `curl` and download `mok` to `/usr/local/bin`:
+Podman is required. On Mac, install [Homebrew](https://brew.sh/) then type `brew install podman`.
+Podman Desktop is not required.
+
+### Installation for Mac Silicon (M1, M2, ...)
+
+Download `mok` to your home directory using curl:
+
+```bash
+cd ~
+curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
+```
+
+Create a podman machine with the right settings: 
+
+```bash
+podman machine init --now --rootful --user-mode-networking mok-machine
+podman machine ssh --username root mok-machine modprobe nf_conntrack
+podman machine ssh --username root mok-machine sysctl -w net.netfilter.nf_conntrack_max=163840
+```
+
+Move `mok` into the podman machine and delete the `mok` that was previously downloaded:
+
+```bash
+cat ~/mok | podman machine ssh --username root mok-machine "cat >/usr/local/bin/mok; chmod +x /usr/local/bin/mok"
+rm ~/mok
+```
+
+### Installation for Linux
+
+Use `curl` to download and move `mok` to `/usr/local/bin`:
 
 ```bash
 curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
@@ -27,14 +56,17 @@ chmod +x mok
 sudo mv mok /usr/local/bin/
 ```
 
-or use `git` and `make` and install to `/usr/local/bin`:
+## Using Mok
+
+### Add an alias
+
+For Mac users:
 
 ```bash
-git clone https://github.com/bashtools/mok.git
-cd mok
-sudo make install
+alias mok="podman machine ssh --username root mok-machine env TERM=$TERM mok"
 ```
 
+<<<<<<< HEAD
 ### First use
 
 For linux users: `alias mok="sudo /usr/local/bin/mok"`
@@ -43,15 +75,41 @@ Build the latest image:
 
 ```bash
 mok build image
-```
-
-### Create a multi node kuberenetes cluster
+=======
+For Linux users:
 
 ```bash
-mok create cluster myk8s --masters 1 --workers 1
+alias mok="sudo /usr/local/bin/mok"
+>>>>>>> a0e801d (Fixing mok for mac)
 ```
 
+Note: Add the alias to your shell startup file to make it persistent
+(For example: mac/zsh users can append that line to `~/.zshrc`).
+
+### Build a container image
+
+```bash
+mok build image
+```
+
+Prebuilt images don't work with Mac yet, so don't try that if you're on Mac OS.
+
+### Create a single node kuberenetes cluster
+
+```bash
+mok create cluster myk8s --masters 1 --publish
+```
+
+For Mac users `--publish` must be used - but it's optional for Linux users:
+
 ### Run some kubectl commands
+
+Naturally, the [`kubectl`](https://kubernetes.io/docs/tasks/tools/) command is needed for this.
+
+Mac users only:
+```bash
+podman machine ssh mok-machine cat /var/tmp/admin-myk8s.conf | sed 's#server:.*#server: https://127.0.0.1:6443#' >/var/tmp/admin-myk8s.conf
+```
 
 ```bash
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
@@ -69,6 +127,8 @@ kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ```bash
 mok -h
 mok create -h
+mok build -h
+# ... etc ...
 ```
 
 ### Delete the cluster
@@ -78,6 +138,14 @@ mok delete cluster myk8s
 ```
 
 ### Uninstall mok completely
+
+#### Mac
+
+```bash
+podman machine rm mok-machine
+```
+
+#### Linux
 
 ```bash
 sudo rm /usr/local/bin/mok
@@ -90,33 +158,12 @@ Then delete the podman images that were built by `mok build`.
 
 ## Known Issues
 
-**Fedora and MacOS:**
 * With multiple master nodes only the first master is set up
 * Currently only single node clusters can be stopped and restarted
-
-**MacOS only:**
-* A recent version of Bash is required.
-  * Use homebrew to install `bash` and `gawk`
-  * add `eval "$(/opt/homebrew/bin/brew shellenv)` to the end of your `.zprofile` or `.bash_profile` so that
-  brew installed files are found first.
-* To be able to use `kubectl` from the host machine and to be able to modify `nf_conntrack_max` the machine needs to be created with:
-  ```bash
-  podman machine init --rootful --user-mode-networing
-  ```
-  * This allows a kubernetes cluster to be created with the `--publish` option, for example:
-    ```bash
-    mok create cluster myk8s 1 0 --publish
-    ```
-    Then the commands in the 'Run some kubectl commands' section above will work without any modification.
-* `kube-proxy` requires a correctly set `nf_conntrack_max`. If it's incorrect then mok will supply the command to correct it and will also suggest the following commands be run:
-    ```
-    # WARNING - This will delete all your existing pods/containers and anything else in the podman machine:
-    podman machine stop
-    podman machine rm
-    podman machine init --now --rootful --user-mode-networing
-    podman machine ssh modprobe nf_conntrack
-    podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=163840
-    ```
+* For Mac, the instructions on this page show one way to run `mok` but colorised
+  output is missing, and `mok exec` does not work optimally. If your Mac is set
+  up with Gnu tools then you can run `mok` without copying it to the podman
+  machine.
 
 ## Some Features
 
@@ -131,7 +178,6 @@ Then delete the podman images that were built by `mok build`.
 
 * [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)
 
-## Support
+## Support Mok
 
-Follow:
-[Mok on BlueSky](https://bsky.app/profile/github-mok.bsky.social)
+Follow [Mok on BlueSky](https://bsky.app/profile/github-mok.bsky.social) or give Mok a star.
