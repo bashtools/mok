@@ -113,6 +113,7 @@ Where command can be one of:
   build   - Build item(s) used by the system.
   get     - Get details about items in the system.
   exec    - 'Log in' to the container.
+  machine - Manage a podman machine.
   version - Display version information.
 
 For help on a specific command, run:

@@ -19,10 +19,21 @@ Mok may work on other versions of Linux or MacOS but I have only tested it on th
 
 ## Install
 
-Podman is required. On Mac, install [Homebrew](https://brew.sh/) then type `brew install podman`.
-Podman Desktop is not required.
-
 ### Installation for Mac Silicon (M1, M2, ...)
+
+On Mac, install [Homebrew](https://brew.sh/).
+
+Install podman, if it's not installed already, with:
+
+```
+brew install podman
+```
+
+A recent version of Bash is required. Install Bash with:
+
+```
+brew install bash
+```
 
 Download `mok` to your home directory using curl:
 
@@ -66,21 +77,10 @@ For Mac users:
 alias mok="podman machine ssh --username root mok-machine env TERM=$TERM mok"
 ```
 
-<<<<<<< HEAD
-### First use
-
-For linux users: `alias mok="sudo /usr/local/bin/mok"`
-
-Build the latest image:
-
-```bash
-mok build image
-=======
 For Linux users:
 
 ```bash
 alias mok="sudo /usr/local/bin/mok"
->>>>>>> a0e801d (Fixing mok for mac)
 ```
 
 Note: Add the alias to your shell startup file to make it persistent

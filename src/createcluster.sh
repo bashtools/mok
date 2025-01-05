@@ -147,7 +147,6 @@ create cluster [flags] options:
               it's enabled, for external kubectl access to the cluster. The IP
               address of the default route interface is added to the cert.
 
-
 EnD
 }
 
