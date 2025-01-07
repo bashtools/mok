@@ -5,7 +5,7 @@ all: mok.deploy tags
 
 mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
-	cd src && ( echo '#!/usr/bin/env bash'; cat \
+	cd src && ( echo '#!/usr/bin/env bash'; cat macos.sh \
 		lib/parser.sh globals.sh error.sh util.sh getcluster.sh machine.sh \
 		exec.sh deletecluster.sh createcluster.sh versions.sh containerutils.sh \
 		buildimage.deploy lib/JSONPath.sh main.sh; \
