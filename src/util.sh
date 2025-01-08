@@ -184,6 +184,26 @@ UT_cleanup() {
   return "${OK}"
 }
 
+# UT_sed_json_block returns the value of the query_key between
+# block_start_key:block_start_val and block_end_key.
+# Args:
+#  Arg 1: data
+#  Arg 2: block_start_key
+#  Arg 3: block_start_val
+#  Arg 4: block_end_key
+#  Arg 5: query_key
+UT_sed_json_block() {
+  local data block_start_key block_start_val block_end_key query_key
+  data="$1"
+  block_start_key="$2"
+  block_start_val="$3"
+  block_end_key="$4"
+  query_key="$5"
+  echo "$data" | sed -rn \
+    '/'"${block_start_key}"'.*'"${block_start_val}"'/,/'"${block_end_key}"'/ { s/^ *"'"${query_key}"'": *//p }' \
+    | tr -d ',"'
+}
+
 # Private Functions -----------------------------------------------------------
 
 # _UT_new sets the initial values for the _UT associative array.

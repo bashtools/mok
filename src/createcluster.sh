@@ -274,7 +274,7 @@ _CC_sanity_checks() {
     host_max=$(cat /proc/sys/net/nf_conntrack_max)
   elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
-    host_max=$(podman machine ssh cat /proc/sys/net/nf_conntrack_max)
+    host_max=$(podman machine ssh mok-machine cat /proc/sys/net/nf_conntrack_max)
   else
     printf '\nWARNING: /proc/sys/net/nf_conntrack_max not found.\n' >"${STDERR}"
     printf '         kube-proxy may not work.\n\n' >"${STDERR}"
@@ -284,7 +284,7 @@ _CC_sanity_checks() {
     cpus=$(grep -cw ^processor /proc/cpuinfo)
   elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
-    cpus=$(podman machine ssh cat /proc/cpuinfo | grep -cw ^processor)
+    cpus=$(podman machine ssh mok-machine cat /proc/cpuinfo | grep -cw ^processor)
   else
     printf '\nWARNING: /proc/cpuinfo not found.\n' >"${STDERR}"
     printf '         I have no idea how many CPUs I have\n' >"${STDERR}"
@@ -310,19 +310,7 @@ _CC_sanity_checks() {
       printf '       sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     elif [[ $(CU_podmantype) == "machine" ]]; then
-      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-        "${should_be}" >"${STDERR}"
-      printf '     If the above command fails, you may have to recreate the podman machine, for example:\n\n' >"${STDERR}"
-      tput setaf 1 # red
-      printf '     WARNING: The following commands will destroy your podman machine and all its data.\n' >"${STDERR}"
-      printf '              All existing pods and containers will be gone.\n\n' >"${STDERR}"
-      tput sgr0 # reset
-      printf '       podman machine stop\n' >"${STDERR}"
-      printf '       podman machine rm\n' >"${STDERR}"
-      printf '       podman machine init --now --rootful --user-mode-networing\n' >"${STDERR}"
-      printf '       podman machine ssh modprobe nf_conntrack\n' >"${STDERR}"
-      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-        "${should_be}" >"${STDERR}"
+      printf '       %s machine setup\n\n' "$(MA_program_name)" >"${STDERR}"
     else
       printf 'Internal ERROR. Invalid podman type.\n' >"${STDERR}"
       return "${ERROR}"

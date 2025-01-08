@@ -1,20 +1,12 @@
 #!/usr/bin/env bash
-__install_extra_packages() {
-  # check for Homebrew
-  if ! command -v brew &>/dev/null; then
-    # Install Homebrew
-    # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    for i in $(seq 1 10); do
-      echo -n "."
-      sleep .2
-    done
-  fi
-}
+# shellcheck shell=bash disable=SC2148
 
 __check_os() {
-  local majorversion system_ok=1 install_bash=0
+  local majorversion system_ok=1 install_bash=0 install_coreutils=0 install_gawk=0
+  local install_podman=0 install_sed=0 __mokostype=linux
 
   if [[ -d /System/Library/CoreServices ]]; then
+    [[ -e /opt/homebrew/bin/bash ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
     # We're on macOS, check for a recent Bash
     if command -v bash &>/dev/null; then
       majorversion=$(bash --version | head -n 1 | sed 's/^.*version \([0-9]*\).*/\1/')
@@ -22,19 +14,113 @@ __check_os() {
       echo "No version of Bash was found which is strange. Aborting."
       exit 1
     fi
-
     if [[ ${majorversion} -lt 5 ]]; then
       install_bash=1
+      system_ok=0
+    fi
+    if ! command -v tac &>/dev/null; then
+      install_coreutils=1
+      system_ok=0
+    fi
+    if ! command -v gawk &>/dev/null; then
+      install_gawk=1
+      system_ok=0
+    fi
+    if ! command -v gsed &>/dev/null; then
+      install_sed=1
+      system_ok=0
+    fi
+    if ! command -v podman &>/dev/null; then
+      install_podman=1
       system_ok=0
     fi
 
     if [[ ${system_ok} -eq 0 ]]; then
       echo "Your system requires some extra packages to be installed."
-      echo "This script can install them for you using Homebrew."
+      echo "This script can install them for you."
       echo
-      read -r -p 'Install extra packages (y/N) ' ans
+      read -r -p 'Install extra packages? (y/N) ' ans
       if [[ ${ans} == "y" ]]; then
-        __install_extra_packages
+        if ! command -v brew &>/dev/null; then
+          echo 'Homebrew is required to install extra packages.'
+          echo 'You can install this yourself by following the instructions at https://brew.sh'
+          echo
+          read -r -p 'Should I install Homebrew now? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            # Install Homebrew
+            echo -n "Installing Homebrew, with:"
+            echo " /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+            echo
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            retval=$?
+            if [[ retval -ne 0 ]]; then
+              echo "Homebrew install failed."
+              echo "Please try to install Homebrew manually using the above commmand."
+              exit 1
+            fi
+            if [[ ! -e /opt/homebrew/bin/brew ]]; then
+              echo "Homebrew did not seem install to /opt/homebrew."
+              echo "Mok expects 'brew' to be in /opt/homebrew/bin/brew but it's not there."
+              echo "Cannot continue. Please report this issue on GitHub."
+              exit 1
+            fi
+            eval "$(/opt/homebrew/bin/brew shellenv)"
+          else
+            echo "Aborting due to missing 'Homebrew'."
+            exit 1
+          fi
+        fi
+        if [[ ! -e /opt/homebrew/bin/brew ]]; then
+          echo "Mok expects 'brew' to be in /opt/homebrew/bin/brew but it's not there."
+          echo "Cannot continue. Please report this issue on GitHub."
+          exit 1
+        fi
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+        if [[ ${install_bash} -eq 1 ]]; then
+          read -r -p 'Bash 5 is not installed. Install? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            brew install bash
+          else
+            echo "Aborting due to missing 'Bash 5'."
+            exit 1
+          fi
+        fi
+        if [[ ${install_coreutils} -eq 1 ]]; then
+          read -r -p 'Coreutils is not installed. Install? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            brew install coreutils
+          else
+            echo "Aborting due to missing 'coreutils'."
+            exit 1
+          fi
+        fi
+        if [[ ${install_gawk} -eq 1 ]]; then
+          read -r -p 'Gawk is not installed. Install? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            brew install gawk
+          else
+            echo "Aborting due to missing 'gawk'."
+            exit 1
+          fi
+        fi
+        if [[ ${install_sed} -eq 1 ]]; then
+          read -r -p 'GNU-Sed is not installed. Install? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            brew install gnu-sed
+          else
+            echo "Aborting due to missing 'sed'."
+            exit 1
+          fi
+        fi
+        if [[ ${install_podman} -eq 1 ]]; then
+          read -r -p 'Podman is not installed. Install? (y/N) ' ans
+          if [[ ${ans} == "y" ]]; then
+            brew install podman
+          else
+            echo "Aborting due to missing 'podman'."
+            exit 1
+          fi
+        fi
       else
         echo "Aborting due to missing packages."
         exit 1
@@ -43,7 +129,20 @@ __check_os() {
   fi
 }
 
-__check_os
+[[ __homebrew -ne 1 ]] && __check_os
+
+[[ -d /System/Library/CoreServices && -e /opt/homebrew/bin/bash && __homebrew -ne 1 ]] && {
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+  export __mokostype=macos
+  export __homebrew=1
+  sed() {
+    gsed "$@"
+  }
+  export -f sed
+  exec bash "$0" "$@"
+}
+
+__mokostype="${__mokostype:-linux}"
 # shellcheck shell=bash disable=SC2148
 # PA - PArser
 
@@ -343,7 +442,7 @@ _PA_new
 # Args: None expected.
 _GL_new() {
 
-  declare -rg MOKVERSION="0.8.22"
+  declare -rg MOKVERSION="0.8.23"
   declare -rg K8SVERSION="1.32.0"
   declare -rg GO_VERSION="1.23.2"
 
@@ -637,6 +736,26 @@ UT_cleanup() {
   return "${OK}"
 }
 
+# UT_sed_json_block returns the value of the end_key between start_key:start_val and
+# end_key.
+# Args:
+#  Arg 1: data
+#  Arg 2: block_start_key
+#  Arg 3: block_start_val
+#  Arg 4: block_end_key
+#  Arg 5: query_key
+UT_sed_json_block() {
+  local data block_start_key block_start_val block_end_key query_key
+  data="$1"
+  block_start_key="$2"
+  block_start_val="$3"
+  block_end_key="$4"
+  query_key="$5"
+  echo "$data" | sed -rn \
+    '/'"${block_start_key}"'.*'"${block_start_val}"'/,/'"${block_end_key}"'/ { s/^ *"'"${query_key}"'": *//p }' \
+    | tr -d ',"'
+}
+
 # Private Functions -----------------------------------------------------------
 
 # _UT_new sets the initial values for the _UT associative array.
@@ -850,7 +969,7 @@ declare -A _MU
 
 # Declare externally defined variables ----------------------------------------
 
-declare OK ERROR STDERR STOP TRUE FALSE
+declare ERROR STDERR STOP
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -888,25 +1007,305 @@ MU_usage() {
   cat <<'EnD'
 MACHINE subcommands are:
  
-  list   - List the currently created Podman machines.
-           Only one machine is currently supported and if it exists
-           it will be named 'mok-machine'.
-  create - Create a Podman machine named 'mok-machine'.
-  delete - Delete the Podman machine named 'mok-machine'.
-  setup  - Modify the Podman machine to automatically apply the correct
-           settings to run Kubernetes. Mok will also be copied to the
-           Podman machine for cases where the host machine does not
-           have GNU tools installed.
+  list    - List the currently created Podman machines. Only one machine
+            is currently supported and it will be named 'mok-machine'.
+  create  - Create a Podman machine named 'mok-machine'. This will also
+            setup the Podman machine to run Kubernetes so there is no
+            need to run 'machine setup'.
+  destroy - Completely removes the Podman machine named 'mok-machine'.
+  start   - Start the Podman machine named 'mok-machine'.
+  stop    - Stop the Podman machine named 'mok-machine'.
+  setup   - Apply the correct settings to the Podman machine to run
+            Kubernetes.
  
 For more information:
 
   machine list -h
   machine create -h
-  machine delete -h
+  machine destroy -h
+  machine start -h
+  machine stop -h
   machine setup -h
  
 EnD
 }
+
+# Private Functions -----------------------------------------------------------
+
+# _MU_new sets the initial values for the Machine Utils associative array and
+# sets up the Parser to call functions in this file.
+# Args: None expected.
+_MU_new() {
+  # Program the parser's state machine
+  PA_add_state "COMMAND" "machine" "SUBCOMMAND" ""
+  PA_add_state "SUBCOMMAND" "machinelist" "END" ""
+  PA_add_state "SUBCOMMAND" "machinecreate" "END" ""
+  PA_add_state "SUBCOMMAND" "machinedestroy" "END" ""
+  PA_add_state "SUBCOMMAND" "machinesetup" "END" ""
+  PA_add_state "SUBCOMMAND" "machinestart" "END" ""
+  PA_add_state "SUBCOMMAND" "machinestop" "END" ""
+
+  # Set up the parser's option callbacks
+  PA_add_option_callback "machine" "MU_process_options" || return
+  PA_add_option_callback "machinelist" "MU_list_process_options" || return
+  PA_add_option_callback "machinecreate" "MU_create_process_options" || return
+  PA_add_option_callback "machinedestroy" "MU_destroy_process_options" || return
+  PA_add_option_callback "machinesetup" "MU_setup_process_options" || return
+  PA_add_option_callback "machinestart" "MU_start_process_options" || return
+  PA_add_option_callback "machinestop" "MU_stop_process_options" || return
+
+  # Set up the parser's usage callbacks
+  PA_add_usage_callback "machine" "MU_usage" || return
+  PA_add_usage_callback "machinelist" "MU_list_usage" || return
+  PA_add_usage_callback "machinecreate" "MU_create_usage" || return
+  PA_add_usage_callback "machinedestroy" "MU_destroy_usage" || return
+  PA_add_usage_callback "machinesetup" "MU_setup_usage" || return
+  PA_add_usage_callback "machinestart" "MU_start_usage" || return
+  PA_add_usage_callback "machinestop" "MU_stop_usage" || return
+
+  # Set up the parser's run callbacks
+  PA_add_run_callback "machinelist" "MU_list_run"
+  PA_add_run_callback "machinecreate" "MU_create_run"
+  PA_add_run_callback "machinedestroy" "MU_destroy_run"
+  PA_add_run_callback "machinesetup" "MU_setup_run"
+  PA_add_run_callback "machinestart" "MU_start_run"
+  PA_add_run_callback "machinestop" "MU_stop_run"
+}
+
+# Initialise _MU
+_MU_new || exit 1
+
+# vim helpers -----------------------------------------------------------------
+#include globals.sh
+# vim:ft=sh:sw=2:et:ts=2:
+# shellcheck shell=bash disable=SC2148
+
+# MACHINE STOP ================================================================
+
+# MU_stop_process_options checks if arg1 is in a list of valid machine utility
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the option to be set, optional. This depends on the
+#              type of option.
+MU_stop_process_options() {
+  case "$1" in
+  -h | --help)
+    MU_stop_usage
+    return "${STOP}"
+    ;;
+  *)
+    MU_stop_usage
+    printf 'ERROR: "%s" is not a valid "stop" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# MU_stop_usage outputs help text for the machine utilities component.
+# Args: None expected.
+MU_stop_usage() {
+
+  cat <<EnD
+machine stop options:
+ 
+ Format:
+  machine stop [flags]
+ 
+ Flags:
+  -h - This help text.
+
+ Description:
+  This will stop a Podman machine named 'mok-machine'.
+  Stop the podman machine with: $(MA_program_name) machine stop
+EnD
+}
+
+# MU_stop_run lists Podman machines.
+# Args: None expected.
+MU_stop_run() {
+  UT_run_with_progress \
+    "    Stopping Podman machine: mok-machine" \
+    podman machine stop mok-machine
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+}
+
+
+# shellcheck shell=bash disable=SC2148
+
+# MACHINE START ===============================================================
+
+# MU_start_process_options checks if arg1 is in a list of valid machine utility
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the option to be set, optional. This depends on the
+#              type of option.
+MU_start_process_options() {
+  case "$1" in
+  -h | --help)
+    MU_start_usage
+    return "${STOP}"
+    ;;
+  -v | --verbose)
+    UT_set_tailf "${TRUE}" || err || return
+    ;;
+  *)
+    MU_start_usage
+    printf 'ERROR: "%s" is not a valid "start" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# MU_start_usage outputs help text for the machine utilities component.
+# Args: None expected.
+MU_start_usage() {
+
+  cat <<EnD
+machine start options:
+ 
+ Format:
+  machine start [flags]
+ 
+ Flags:
+  -h, --help - This help text.
+  -v, --verbose - Verbose output. Useful if there was a problem.
+
+ Description:
+  This will start a Podman machine named 'mok-machine'.
+  Start the podman machine with: $(MA_program_name) machine start
+EnD
+}
+
+# MU_start_run lists Podman machines.
+# Args: None expected.
+MU_start_run() {
+  UT_run_with_progress \
+    "    Starting Podman machine: mok-machine" \
+    podman machine start mok-machine
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+}
+
+# shellcheck shell=bash disable=SC2148
+
+# MACHINE CREATE ==============================================================
+
+# MU_create_process_options checks if arg1 is in a list of valid machine utility
+# options. This function is called by the parser.
+# Args: arg1 - the option to check.
+#       arg2 - value of the option to be set, optional. This depends on the
+#              type of option.
+MU_create_process_options() {
+  case "$1" in
+  -h | --help)
+    MU_create_usage
+    return "${STOP}"
+    ;;
+  -v | --verbose)
+    UT_set_tailf "${TRUE}" || err || return
+    ;;
+  *)
+    MU_create_usage
+    printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
+      >"${STDERR}"
+    return "${ERROR}"
+    ;;
+  esac
+}
+
+# MU_create_usage outputs help text for the machine utilities component.
+# Args: None expected.
+MU_create_usage() {
+
+  cat <<EnD
+machine create options:
+ 
+ Format:
+  machine create [flags]
+ 
+ Flags:
+  -h, --help - This help text.
+  -v, --verbose - Verbose output. Useful if there was a problem.
+
+ Description:
+  This will create a Podman machine named 'mok-machine' and setup the
+  machine to run Kubernetes.
+EnD
+}
+
+# MU_create_run lists Podman machines.
+# Args: None expected.
+MU_create_run() {
+  UT_run_with_progress \
+    "    Creating the Podman machine: mok-machine" \
+    podman machine init --now --rootful --user-mode-networking mok-machine
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Loading module in mok-machine" \
+    podman machine ssh --username root mok-machine modprobe nf_conntrack
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Persisting nf_conntrack module in mok-machine" \
+    podman machine ssh --username root mok-machine \
+      bash -c \
+      "\"\\\"echo nf_conntrack \
+      >/etc/modules-load.d/nf_conntrack.conf\\\"\""
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Setting nf_conntrack_max in mok-machine" \
+    podman machine ssh --username root mok-machine sysctl -q \
+      -w net.netfilter.nf_conntrack_max=163840
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Persisting nf_conntrack_max in mok-machine" \
+    podman machine ssh --username root mok-machine \
+      bash -c \
+      "\"\\\"echo net.netfilter.nf_conntrack_max=163840 \
+      >/etc/sysctl.d/99-nf_conntrack_max.conf\\\"\""
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+}
+
+# shellcheck shell=bash disable=SC2148
 
 # MACHINE LIST ================================================================
 
@@ -949,24 +1348,49 @@ EnD
 # MU_list_run lists Podman machines.
 # Args: None expected.
 MU_list_run() {
-  echo "MU_list_run"
+  info=$(podman machine list --format json) || err || return
+
+  running=$(UT_sed_json_block "${info}" \
+    'Name' 'mok-machine' '}' \
+    'Running' \
+    ) || err || return
+
+  exists=$(UT_sed_json_block "${info}" \
+    'Name' 'mok-machine' '}' \
+    'Name' \
+    ) || err || return
+
+  if [[ ${exists} != "mok-machine" ]]; then
+    printf 'mok-machine: does not exist.\n'
+  else
+    if [[ ${running} == "true" ]]; then
+      printf 'mok-machine: running.\n'
+    else
+      printf 'mok-machine: stopped.\n'
+    fi
+  fi
 }
 
-# MACHINE CREATE ==============================================================
+# shellcheck shell=bash disable=SC2148
 
-# MU_create_process_options checks if arg1 is in a list of valid machine utility
+# MACHINE DESTROY ==============================================================
+
+# MU_destroy_process_options checks if arg1 is in a list of valid machine utility
 # options. This function is called by the parser.
 # Args: arg1 - the option to check.
 #       arg2 - value of the option to be set, optional. This depends on the
 #              type of option.
-MU_create_process_options() {
+MU_destroy_process_options() {
   case "$1" in
   -h | --help)
-    MU_create_usage
+    MU_destroy_usage
     return "${STOP}"
     ;;
+  -v | --verbose)
+    UT_set_tailf "${TRUE}" || err || return
+    ;;
   *)
-    MU_create_usage
+    MU_destroy_usage
     printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
       >"${STDERR}"
     return "${ERROR}"
@@ -974,71 +1398,49 @@ MU_create_process_options() {
   esac
 }
 
-# MU_create_usage outputs help text for the machine utilities component.
+# MU_destroy_usage outputs help text for the machine utilities component.
 # Args: None expected.
-MU_create_usage() {
+MU_destroy_usage() {
 
   cat <<'EnD'
-machine create options:
+machine destroy options:
  
  Format:
-  machine create [flags]
+  machine destroy [flags]
  
  Flags:
-  -h - This help text.
+  -h, --help - This help text.
+  -v, --verbose - Verbose output. Useful if there was a problem.
+
+ Description:
+  This will completely remove a Podman machine named 'mok-machine'.
+  A machine must be stopped before it can be destroyed.
 
 EnD
 }
 
-# MU_create_run lists Podman machines.
+# MU_destroy_run deletes a Podman machine.
 # Args: None expected.
-MU_create_run() {
-  echo "MU_create_run"
-}
-
-# MACHINE DELETE ==============================================================
-
-# MU_delete_process_options checks if arg1 is in a list of valid machine utility
-# options. This function is called by the parser.
-# Args: arg1 - the option to check.
-#       arg2 - value of the option to be set, optional. This depends on the
-#              type of option.
-MU_delete_process_options() {
-  case "$1" in
-  -h | --help)
-    MU_delete_usage
-    return "${STOP}"
-    ;;
-  *)
-    MU_delete_usage
-    printf 'ERROR: "%s" is not a valid "create" option.\n' "${1}" \
-      >"${STDERR}"
+MU_destroy_run() {
+  printf 'This will completely remove the podman machine named "mok-machine"\n'
+  printf "Are you sure you want to destroy the machine? (y/N) >"
+  read -r ans
+  [[ ${ans} != "y" ]] && {
+    printf 'Cancelling by user request.\n'
+    return "${OK}"
+  }
+  UT_run_with_progress \
+    "    Deleting the Podman machine: mok-machine" \
+    podman machine rm -f mok-machine
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
     return "${ERROR}"
-    ;;
-  esac
+  }
 }
 
-# MU_delete_usage outputs help text for the machine utilities component.
-# Args: None expected.
-MU_delete_usage() {
-
-  cat <<'EnD'
-machine delete options:
- 
- Format:
-  machine delete [flags]
- 
- Flags:
-  -h - This help text.
-
-EnD
-}
-
-# MU_delete_run deletes a Podman machine.
-# Args: None expected.
-MU_delete_run() {
-  echo "MU_delete_run"
-}
+# shellcheck shell=bash disable=SC2148
 
 # MACHINE SETUP ===============================================================
 
@@ -1052,6 +1454,9 @@ MU_setup_process_options() {
   -h | --help)
     MU_setup_usage
     return "${STOP}"
+    ;;
+  -v | --verbose)
+    UT_set_tailf "${TRUE}" || err || return
     ;;
   *)
     MU_setup_usage
@@ -1074,7 +1479,8 @@ machine setup options:
   machine setup [flags]
  
  Flags:
-  -h - This help text.
+  -h, --help - This help text.
+  -v, --verbose - Verbose output. Useful if there was a problem.
 
 EnD
 }
@@ -1082,49 +1488,54 @@ EnD
 # MU_setup_run sets up a Podman machine.
 # Args: None expected.
 MU_setup_run() {
-  echo "MU_setup_run"
+  UT_run_with_progress \
+    "    Loading module in mok-machine" \
+    podman machine ssh --username root mok-machine modprobe nf_conntrack
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Persisting nf_conntrack module in mok-machine" \
+    podman machine ssh --username root mok-machine \
+      bash -c \
+      "\"\\\"echo nf_conntrack \
+      >/etc/modules-load.d/nf_conntrack.conf\\\"\""
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Setting nf_conntrack_max in mok-machine" \
+    podman machine ssh --username root mok-machine sysctl -q \
+      -w net.netfilter.nf_conntrack_max=163840
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
+
+  UT_run_with_progress \
+    "    Persisting nf_conntrack_max in mok-machine" \
+    podman machine ssh --username root mok-machine \
+      bash -c \
+      "\"\\\"echo net.netfilter.nf_conntrack_max=163840 \
+      >/etc/sysctl.d/99-nf_conntrack_max.conf\\\"\""
+  r=$?
+  [[ ${r} -ne 0 ]] && {
+    runlogfile=$(UT_runlogfile) || err || return
+    cat "${runlogfile}" >"${STDERR}"
+    return "${ERROR}"
+  }
 }
 
-# Private Functions -----------------------------------------------------------
-
-# _MU_new sets the initial values for the Machine Utils associative array and
-# sets up the Parser to call functions in this file.
-# Args: None expected.
-_MU_new() {
-  # Program the parser's state machine
-  PA_add_state "COMMAND" "machine" "SUBCOMMAND" ""
-  PA_add_state "SUBCOMMAND" "machinelist" "END" ""
-  PA_add_state "SUBCOMMAND" "machinecreate" "END" ""
-  PA_add_state "SUBCOMMAND" "machinedelete" "END" ""
-  PA_add_state "SUBCOMMAND" "machinesetup" "END" ""
-
-  # Set up the parser's option callbacks
-  PA_add_option_callback "machine" "MU_process_options" || return
-  PA_add_option_callback "machinelist" "MU_list_process_options" || return
-  PA_add_option_callback "machinecreate" "MU_create_process_options" || return
-  PA_add_option_callback "machinedelete" "MU_delete_process_options" || return
-  PA_add_option_callback "machinesetup" "MU_setup_process_options" || return
-
-  # Set up the parser's usage callbacks
-  PA_add_usage_callback "machine" "MU_usage" || return
-  PA_add_usage_callback "machinelist" "MU_list_usage" || return
-  PA_add_usage_callback "machinecreate" "MU_create_usage" || return
-  PA_add_usage_callback "machinedelete" "MU_delete_usage" || return
-  PA_add_usage_callback "machinesetup" "MU_setup_usage" || return
-
-  # Set up the parser's run callbacks
-  PA_add_run_callback "machinelist" "MU_list_run"
-  PA_add_run_callback "machinecreate" "MU_create_run"
-  PA_add_run_callback "machinedelete" "MU_delete_run"
-  PA_add_run_callback "machinesetup" "MU_setup_run"
-}
-
-# Initialise _MU
-_MU_new || exit 1
-
-# vim helpers -----------------------------------------------------------------
-#include globals.sh
-# vim:ft=sh:sw=2:et:ts=2:
 # shellcheck shell=bash disable=SC2148
 # EX - EXec
 
@@ -1282,14 +1693,26 @@ _EX_sanity_checks() { :; }
 #       arg2 - command to run
 _EX_exec() {
 
-  local cmd=${2:-bash}
+  local cmd=${2:-bash} url port
 
   containerrt=$(CU_containerrt) || err || return
+  podmantype=$(CU_podmantype) || err || return
+
+  # TODO: A named podman machine does not work the same way
+  #       as the default podman machine. Rootful doesn't work
+  #       for a named machine so need to use '--url'. Ask
+  #       Podman developers about this.
+  port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+  url="ssh://root@127.0.0.1:$port/run/podman/podman.sock"
 
   read -rt 0.1
-  if [[ ${containerrt} == "podman" ]]; then
+  if [[ $containerrt == "podman" && $podmantype == "machine" ]]; then
+      # TODO: This would be preferred to '--url'
+    # podman -c mok-machine exec -ti "$1" "${cmd}" 
+    podman --url "${url}" exec -ti "$1" "${cmd}" 
+  elif [[ $containerrt == "podman" ]]; then
     exec podman exec -ti "$1" "${cmd}"
-  elif [[ ${containerrt} == "docker" ]]; then
+  elif [[ $containerrt == "docker" ]]; then
     exec docker exec -ti "$1" "${cmd}"
   fi
 }
@@ -1746,7 +2169,7 @@ _CC_sanity_checks() {
     host_max=$(cat /proc/sys/net/nf_conntrack_max)
   elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
-    host_max=$(podman machine ssh cat /proc/sys/net/nf_conntrack_max)
+    host_max=$(podman machine ssh mok-machine cat /proc/sys/net/nf_conntrack_max)
   else
     printf '\nWARNING: /proc/sys/net/nf_conntrack_max not found.\n' >"${STDERR}"
     printf '         kube-proxy may not work.\n\n' >"${STDERR}"
@@ -1756,7 +2179,7 @@ _CC_sanity_checks() {
     cpus=$(grep -cw ^processor /proc/cpuinfo)
   elif [[ $(CU_podmantype) == "machine" ]]; then
     # Lazily assuming the file exists
-    cpus=$(podman machine ssh cat /proc/cpuinfo | grep -cw ^processor)
+    cpus=$(podman machine ssh mok-machine cat /proc/cpuinfo | grep -cw ^processor)
   else
     printf '\nWARNING: /proc/cpuinfo not found.\n' >"${STDERR}"
     printf '         I have no idea how many CPUs I have\n' >"${STDERR}"
@@ -1782,19 +2205,7 @@ _CC_sanity_checks() {
       printf '       sudo sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
         "${should_be}" >"${STDERR}"
     elif [[ $(CU_podmantype) == "machine" ]]; then
-      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-        "${should_be}" >"${STDERR}"
-      printf '     If the above command fails, you may have to recreate the podman machine, for example:\n\n' >"${STDERR}"
-      tput setaf 1 # red
-      printf '     WARNING: The following commands will destroy your podman machine and all its data.\n' >"${STDERR}"
-      printf '              All existing pods and containers will be gone.\n\n' >"${STDERR}"
-      tput sgr0 # reset
-      printf '       podman machine stop\n' >"${STDERR}"
-      printf '       podman machine rm\n' >"${STDERR}"
-      printf '       podman machine init --now --rootful --user-mode-networing\n' >"${STDERR}"
-      printf '       podman machine ssh modprobe nf_conntrack\n' >"${STDERR}"
-      printf '       podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=%d\n\n' \
-        "${should_be}" >"${STDERR}"
+      printf '       %s machine setup\n\n' "$(MA_program_name)" >"${STDERR}"
     else
       printf 'Internal ERROR. Invalid podman type.\n' >"${STDERR}"
       return "${ERROR}"
@@ -2638,7 +3049,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs systemd_always clustername parg pval
+  local imagename img allimgs systemd_always clustername parg pval root_user url port
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -2646,7 +3057,7 @@ CU_create_container() {
     err || return
   }
 
-  img=$(BI_baseimagename) || err || return
+  img="$(BI_baseimagename)_$(MA_ostype)"
 
   local imglocal="${_CU[imgprefix]}local/${img}"
   local imgremote="myownkind/${img}"
@@ -2695,6 +3106,15 @@ EnD
 
   # Docker does not have the --systemd option
   [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
+  [[ ${_CU[podmantype]} == "machine" ]] && {
+    root_user="--user=root"
+    # TODO: A named podman machine does not work the same way
+    #       as the default podman machine. Rootful doesn't work
+    #       for a named machine so need to use '--url'. Ask
+    #       Podman developers about this.
+    port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+    url="--url ssh://root@127.0.0.1:$port/run/podman/podman.sock"
+  }
 
   [[ $(CC_publish) == "${TRUE}" ]] && {
     if [[ $(CC_withlb) == "${TRUE}" ]]; then
@@ -2710,7 +3130,8 @@ EnD
     fi
   }
 
-  docker run --privileged ${systemd_always} \
+  # shellcheck disable=SC2086
+  docker ${url} run --privileged ${systemd_always} ${root_user} \
     --network "${clustername}_network" \
     -v /lib/modules:/lib/modules:ro \
     --detach ${parg} ${pval} \
@@ -2785,7 +3206,7 @@ EnD
 # a podman machine, and macos will always be using a podman machine.
 # Args: No args expected.
 _CU_podman_checks() {
-  local info running
+  local info running exists
 
   if [[ -e /proc/sys/kernel/hostname ]]; then
     # We're on linux
@@ -2799,12 +3220,27 @@ _CU_podman_checks() {
     }
 
     info=$(podman machine list --format json) || err || return
-    running=$(JSONPath -b '..Running' <<<"${info}") || err || return
+    running=$(UT_sed_json_block "${info}" \
+      'Name' 'mok-machine' '}' \
+      'Running' \
+      ) || err || return
+    exists=$(UT_sed_json_block "${info}" \
+      'Name' 'mok-machine' '}' \
+      'Name' \
+      ) || err || return
 
-    if [[ ${running} == "true" ]]; then
+    if [[ $(MA_arg_1) != "machine" && ${exists} != "mok-machine" ]]; then
+      printf 'ERROR: Podman machine does not exist.\n' >"${STDERR}"
+      printf '       Create a Podman machine with: %s machine create\n' \
+        "$(MA_program_name)" >"${STDERR}"
+      exit "${ERROR}"
+    elif [[ ${running} == "true" ]]; then
       _CU[podmantype]="machine"
-    else
-      printf 'ERROR: Podman machine is not running. Aborting.\n' >"${STDERR}"
+    elif [[ $(MA_arg_1) != "machine" ]]; then
+      # Don't check for a podman machine if we're running 'machine' commands
+      printf 'ERROR: Podman machine is not running.\n' >"${STDERR}"
+      printf '       Try starting the machine with: %s machine start\n' \
+        "$(MA_program_name)" >"${STDERR}"
       exit "${ERROR}"
     fi
   else
@@ -2846,21 +3282,35 @@ _CU_new() {
 }
 
 # Override `docker` depending on _CU[containerrt]
-docker() {
-  local cmd
-  if [[ "${_CU[containerrt]}" == "podman" ]]; then
-    podman "$@"
-  else
-    cmd=$(which -a docker | tail -n 1)
-    $cmd "$@"
-  fi
-}
+# [[ -n ${_CU[containerrt]} ]] && {
+  docker() {
+    local cmd port url
+
+    if [[ "${_CU[containerrt]}" == "podman" && "${_CU[podmantype]}" == "machine" ]]; then
+      # TODO: A named podman machine does not work the same way
+      #       as the default podman machine. Rootful doesn't work
+      #       for a named machine so need to use '--url'. Ask
+      #       Podman developers about this.
+      port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+      url="ssh://root@127.0.0.1:$port/run/podman/podman.sock"
+
+      # TODO: This would be preferred to '--url'
+      # podman -c mok-machine "$@"
+      podman --url "${url}" "$@"
+    elif [[ "${_CU[containerrt]}" == "podman" ]]; then
+      podman "$@"
+    else
+      cmd=$(which -a docker | tail -n 1)
+      $cmd "$@"
+    fi
+  }
+# }
 
 # Override `ip` depending on _CU[podmantype]
 ip() {
   local cmd
   if [[ "${_CU[podmantype]}" == "machine" ]]; then
-    podman machine ssh ip "$@"
+    podman machine ssh mok-machine ip "$@"
   else
     cmd=$(which -a ip | tail -n 1)
     $cmd "$@"
@@ -3038,7 +3488,7 @@ _BI_build_container_image() {
   _BI_create_docker_build_dir || return
 
   buildargs=$(_BI_get_build_args_for_latest) || return
-  basename="${_BI[baseimagename]}"
+  basename="${_BI[baseimagename]}_$(MA_ostype)"
   tagname="${K8SVERSION}"
 
   local imgprefix
@@ -3129,7 +3579,7 @@ _BI_modify_container_image() {
   # Write image
   local imgprefix tagname basename
   imgprefix=$(CU_imgprefix) || err || return
-  basename="${_BI[baseimagename]}"
+  basename="${_BI[baseimagename]}_$(MA_ostype)"
   tagname="${K8SVERSION}"
   docker commit mok-build-modify "${imgprefix}local/${basename}:${tagname}" || err || return
 
@@ -4551,13 +5001,30 @@ JSONPath_new || exit 1
 declare -A _MA
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR TRUE
+declare OK ERROR STOP STDERR TRUE __mokostype
 
 # Getters/Setters -------------------------------------------------------------
 
 # MA_program_args getter outputs the program arguments sent by the user.
 MA_program_args() {
   printf '%s' "${_MA[program_args]}"
+}
+
+# MA_arg_1 getter outputs the first argument sent by the user.
+# Used by _CU_podman_checks so it doesn't check for a podman machine
+# if we're running 'machine' commands
+MA_arg_1() {
+  printf '%s' "${_MA[arg_1]}"
+}
+
+# MA_program_name getter outputs the name of the program.
+MA_program_name() {
+  printf '%s' "${_MA[arg_0]##*/}"
+}
+
+# MA_ostype getter outputs the OS type.
+MA_ostype() {
+  printf '%s' "${_MA[ostype]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -4619,7 +5086,7 @@ MA_cleanup() {
 # Args: No args expected.
 MA_sanity_checks() {
 
-  local binary
+  local binary binaries
 
   if [[ $(CU_podmantype) == "native" ]]; then
     binaries="gawk tac column tput grep sed ip cut"
@@ -4659,7 +5126,7 @@ Where command can be one of:
   build   - Build item(s) used by the system.
   get     - Get details about items in the system.
   exec    - 'Log in' to the container.
-  machine - Manage a podman machine.
+  machine - Manage a podman machine (MacOS only).
   version - Display version information.
 
 For help on a specific command, run:
@@ -4670,6 +5137,9 @@ EnD
 # MA_new sets the initial values for the _MA associative array
 _MA_new() {
   _MA[program_args]="$*"
+  _MA[arg_0]="$0"
+  _MA[arg_1]="$1"
+  _MA[ostype]="${__mokostype}" # linux or macos
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "version" "END" "MA_version"

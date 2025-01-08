@@ -37,7 +37,14 @@ mok build image --tailf
 ```
 Tag and upload:
 ```
-sudo podman tag localhost/local/mok-image:1.32.0 docker.io/myownkind/mok-image:1.32.0
+sudo podman tag localhost/local/mok-image_linux:1.32.0 docker.io/myownkind/mok-image_linux:1.32.0
 sudo podman login docker.io
-sudo podman push docker.io/myownkind/mok-image:1.32.0
+sudo podman push docker.io/myownkind/mok-image_linux:1.32.0
 ```
+or
+```
+podman -c mok-machine tag localhost/local/mok-image_macos:1.32.0 docker.io/myownkind/mok-image_macos:1.32.0
+podman -c mok-machine login docker.io
+podman -c mok-machine push docker.io/myownkind/mok-image_macos:1.32.0
+```
+

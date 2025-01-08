@@ -129,7 +129,7 @@ CU_get_container_info() {
 #       arg3 - The k8s base image version to use.
 CU_create_container() {
 
-  local imagename img allimgs systemd_always clustername parg pval
+  local imagename img allimgs systemd_always clustername parg pval root_user url port
 
   [[ -z $1 || -z $2 || -z $3 ]] && {
     printf 'INTERNAL ERROR: Neither arg1, arg2 nor arg3 can be empty.\n' \
@@ -137,7 +137,7 @@ CU_create_container() {
     err || return
   }
 
-  img=$(BI_baseimagename) || err || return
+  img="$(BI_baseimagename)_$(MA_ostype)"
 
   local imglocal="${_CU[imgprefix]}local/${img}"
   local imgremote="myownkind/${img}"
@@ -186,6 +186,15 @@ EnD
 
   # Docker does not have the --systemd option
   [[ ${_CU[containerrt]} == "podman" ]] && systemd_always="--systemd=always"
+  [[ ${_CU[podmantype]} == "machine" ]] && {
+    root_user="--user=root"
+    # TODO: A named podman machine does not work the same way
+    #       as the default podman machine. Rootful doesn't work
+    #       for a named machine so need to use '--url'. Ask
+    #       Podman developers about this.
+    port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+    url="--url ssh://root@127.0.0.1:$port/run/podman/podman.sock"
+  }
 
   [[ $(CC_publish) == "${TRUE}" ]] && {
     if [[ $(CC_withlb) == "${TRUE}" ]]; then
@@ -201,7 +210,8 @@ EnD
     fi
   }
 
-  docker run --privileged ${systemd_always} \
+  # shellcheck disable=SC2086
+  docker ${url} run --privileged ${systemd_always} ${root_user} \
     --network "${clustername}_network" \
     -v /lib/modules:/lib/modules:ro \
     --detach ${parg} ${pval} \
@@ -276,7 +286,7 @@ EnD
 # a podman machine, and macos will always be using a podman machine.
 # Args: No args expected.
 _CU_podman_checks() {
-  local info running
+  local info running exists
 
   if [[ -e /proc/sys/kernel/hostname ]]; then
     # We're on linux
@@ -290,12 +300,27 @@ _CU_podman_checks() {
     }
 
     info=$(podman machine list --format json) || err || return
-    running=$(JSONPath -b '..Running' <<<"${info}") || err || return
+    running=$(UT_sed_json_block "${info}" \
+      'Name' 'mok-machine' '}' \
+      'Running' \
+      ) || err || return
+    exists=$(UT_sed_json_block "${info}" \
+      'Name' 'mok-machine' '}' \
+      'Name' \
+      ) || err || return
 
-    if [[ ${running} == "true" ]]; then
+    if [[ $(MA_arg_1) != "machine" && ${exists} != "mok-machine" ]]; then
+      printf 'ERROR: Podman machine does not exist.\n' >"${STDERR}"
+      printf '       Create a Podman machine with: %s machine create\n' \
+        "$(MA_program_name)" >"${STDERR}"
+      exit "${ERROR}"
+    elif [[ ${running} == "true" ]]; then
       _CU[podmantype]="machine"
-    else
-      printf 'ERROR: Podman machine is not running. Aborting.\n' >"${STDERR}"
+    elif [[ $(MA_arg_1) != "machine" ]]; then
+      # Don't check for a podman machine if we're running 'machine' commands
+      printf 'ERROR: Podman machine is not running.\n' >"${STDERR}"
+      printf '       Try starting the machine with: %s machine start\n' \
+        "$(MA_program_name)" >"${STDERR}"
       exit "${ERROR}"
     fi
   else
@@ -337,21 +362,35 @@ _CU_new() {
 }
 
 # Override `docker` depending on _CU[containerrt]
-docker() {
-  local cmd
-  if [[ "${_CU[containerrt]}" == "podman" ]]; then
-    podman "$@"
-  else
-    cmd=$(which -a docker | tail -n 1)
-    $cmd "$@"
-  fi
-}
+# [[ -n ${_CU[containerrt]} ]] && {
+  docker() {
+    local cmd port url
+
+    if [[ "${_CU[containerrt]}" == "podman" && "${_CU[podmantype]}" == "machine" ]]; then
+      # TODO: A named podman machine does not work the same way
+      #       as the default podman machine. Rootful doesn't work
+      #       for a named machine so need to use '--url'. Ask
+      #       Podman developers about this.
+      port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+      url="ssh://root@127.0.0.1:$port/run/podman/podman.sock"
+
+      # TODO: This would be preferred to '--url'
+      # podman -c mok-machine "$@"
+      podman --url "${url}" "$@"
+    elif [[ "${_CU[containerrt]}" == "podman" ]]; then
+      podman "$@"
+    else
+      cmd=$(which -a docker | tail -n 1)
+      $cmd "$@"
+    fi
+  }
+# }
 
 # Override `ip` depending on _CU[podmantype]
 ip() {
   local cmd
   if [[ "${_CU[podmantype]}" == "machine" ]]; then
-    podman machine ssh ip "$@"
+    podman machine ssh mok-machine ip "$@"
   else
     cmd=$(which -a ip | tail -n 1)
     $cmd "$@"

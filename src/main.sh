@@ -5,13 +5,30 @@
 declare -A _MA
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR TRUE
+declare OK ERROR STOP STDERR TRUE __mokostype
 
 # Getters/Setters -------------------------------------------------------------
 
 # MA_program_args getter outputs the program arguments sent by the user.
 MA_program_args() {
   printf '%s' "${_MA[program_args]}"
+}
+
+# MA_arg_1 getter outputs the first argument sent by the user.
+# Used by _CU_podman_checks so it doesn't check for a podman machine
+# if we're running 'machine' commands
+MA_arg_1() {
+  printf '%s' "${_MA[arg_1]}"
+}
+
+# MA_program_name getter outputs the name of the program.
+MA_program_name() {
+  printf '%s' "${_MA[arg_0]##*/}"
+}
+
+# MA_ostype getter outputs the OS type.
+MA_ostype() {
+  printf '%s' "${_MA[ostype]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -73,7 +90,7 @@ MA_cleanup() {
 # Args: No args expected.
 MA_sanity_checks() {
 
-  local binary
+  local binary binaries
 
   if [[ $(CU_podmantype) == "native" ]]; then
     binaries="gawk tac column tput grep sed ip cut"
@@ -113,7 +130,7 @@ Where command can be one of:
   build   - Build item(s) used by the system.
   get     - Get details about items in the system.
   exec    - 'Log in' to the container.
-  machine - Manage a podman machine.
+  machine - Manage a podman machine (MacOS only).
   version - Display version information.
 
 For help on a specific command, run:
@@ -124,6 +141,9 @@ EnD
 # MA_new sets the initial values for the _MA associative array
 _MA_new() {
   _MA[program_args]="$*"
+  _MA[arg_0]="$0"
+  _MA[arg_1]="$1"
+  _MA[ostype]="${__mokostype}" # linux or macos
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "version" "END" "MA_version"
