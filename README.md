@@ -5,21 +5,37 @@
 
 Current kubernetes version: 1.32.0
 
+## TL;DR Quick Start
+
+```bash
+curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
+chmod +x mok
+sudo mv mok /usr/local/bin/
+mok build image --get-prebuilt-image
+mok create cluster myk8s --masters 1 --publish
+export KUBECONFIG=/var/tmp/admin-myk8s.conf
+kubectl get nodes
+kubectl get pods --all-namespaces
+kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
+mok delete cluster myk8s
+```
+
+To ensure no resources are used on Mac OS afterwards, run `mok machine destroy`.
+
 ## Requirements
 
-**Fedora 41 Desktop/Server on x86_64 or AMD64**
-* Podman
-* 5 GB of free disk space
+**MacOS on Apple Silicon (M1, M2, ...)**
+* Mok will will install any required packages using Homebrew, and will prompt you before doing so.
+* To see exactly how and what will be installed, see `src/macos.sh`.
 
-**MacOS 14.7 (Sonoma) on Apple Silicon**
-* Podman
-* 5 GB of free disk space
-
-Mok may work on other versions of Linux or MacOS but I have only tested it on the above.
+**Fedora Desktop or Server**
+* Install Podman.
 
 ## Install
 
-Use `curl` and download `mok` to `/usr/local/bin`:
+### Installation for Linux and Mac
+
+Use `curl` to download `mok` and move it to `/usr/local/bin`:
 
 ```bash
 curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
@@ -27,31 +43,35 @@ chmod +x mok
 sudo mv mok /usr/local/bin/
 ```
 
-or use `git` and `make` and install to `/usr/local/bin`:
+## Using Mok
+
+### Add an alias (Linux only)
+
+On Linux only, use `sudo mok ...` or create an alias so that only `mok` is needed:
 
 ```bash
-git clone https://github.com/bashtools/mok.git
-cd mok
-sudo make install
+alias mok="sudo /usr/local/bin/mok"
 ```
 
-### First use
+Note: Add the alias to your shell startup file (`.bash_profile` or `.zshrc`) to make it persistent
 
-For linux users: `alias mok="sudo /usr/local/bin/mok"`
-
-Build the latest image:
+### Build a container image
 
 ```bash
-mok build image
+mok build image --get-prebuilt-image
 ```
 
-### Create a multi node kuberenetes cluster
+### Create a single node kuberenetes cluster
 
 ```bash
-mok create cluster myk8s --masters 1 --workers 1
+mok create cluster myk8s --masters 1 --publish
 ```
+
+For Mac users `--publish` must be used - but it's optional for Linux users:
 
 ### Run some kubectl commands
+
+Naturally, the [kubectl command](https://kubernetes.io/docs/tasks/tools/) is needed for this.
 
 ```bash
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
@@ -60,7 +80,7 @@ kubectl get pods --all-namespaces
 ```
 
 ```bash
-# --privileged is required if you want to `ping`
+# --privileged is required if you want to `ping` a host
 kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ```
 
@@ -69,6 +89,9 @@ kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
 ```bash
 mok -h
 mok create -h
+mok build -h
+mok machine -h
+# ... etc ...
 ```
 
 ### Delete the cluster
@@ -77,12 +100,38 @@ mok create -h
 mok delete cluster myk8s
 ```
 
-### Uninstall mok completely
+## To Uninstall mok completely
+
+### Mac
+
+```bash
+mok machine destroy
+```
+
+If `mok` installed Homebrew, then remove homebrew and all its installed packages with:
+
+```
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"
+```
+
+Then to completely remove any left over directories run:
+
+```
+sudo rm -rf /opt/homebrew
+```
+
+Finally, delete `mok`, with:
+
+```bash
+sudo rm /usr/local/bin/mok
+```
+
+### Linux
 
 ```bash
 sudo rm /usr/local/bin/mok
 
-# If you used git and make delete the git repo
+# If you used git and make, then delete the git repo
 rm -rf mok/
 ```
 
@@ -90,36 +139,18 @@ Then delete the podman images that were built by `mok build`.
 
 ## Known Issues
 
-**Fedora and MacOS:**
 * With multiple master nodes only the first master is set up
 * Currently only single node clusters can be stopped and restarted
-
-**MacOS only:**
-* A recent version of Bash is required.
-  * Use homebrew to install `bash` and `gawk`
-  * add `eval "$(/opt/homebrew/bin/brew shellenv)` to the end of your `.zprofile` or `.bash_profile` so that
-  brew installed files are found first.
-* To be able to use `kubectl` from the host machine and to be able to modify `nf_conntrack_max` the machine needs to be created with:
-  ```bash
-  podman machine init --rootful --user-mode-networing
-  ```
-  * This allows a kubernetes cluster to be created with the `--publish` option, for example:
-    ```bash
-    mok create cluster myk8s 1 0 --publish
-    ```
-    Then the commands in the 'Run some kubectl commands' section above will work without any modification.
-* `kube-proxy` requires a correctly set `nf_conntrack_max`. If it's incorrect then mok will supply the command to correct it and will also suggest the following commands be run:
-    ```
-    # WARNING - This will delete all your existing pods/containers and anything else in the podman machine:
-    podman machine stop
-    podman machine rm
-    podman machine init --now --rootful --user-mode-networing
-    podman machine ssh modprobe nf_conntrack
-    podman machine ssh sysctl -w net.netfilter.nf_conntrack_max=163840
-    ```
+* For Mac, if you installed Homebrew with `mok` then you should run
+  `/opt/homebrew/bin/brew doctor` and follow the instructions shown there if
+  you want to use Homebrew outside of Mok, or if you want to run the utilities
+  that mok installed (podman for example).
 
 ## Some Features
 
+* Podman Desktop is not required
+* On Mac OS all the required packages are installed for you
+* On Mac OS it uses a non-default podman machine, so won't mess up your existing podman installation
 * Builds kubernetes master and worker nodes in containers
 * Very simple to use without need for YAML files
 * After creating the image a single node cluster builds in under 60 seconds
@@ -127,11 +158,10 @@ Then delete the podman images that were built by `mok build`.
 * Can skip setting up kubernetes on the master and/or worker node (good for learning!)
   * In this case the set-up scripts are placed in `/root` in the containers and can be run by hand
   * Can do kubernetes the hard way (see [kthwic](https://github.com/my-own-kind/kubernetes-the-hard-way-in-containers))
-* `mok build` and `mok create` can show extensive logs with `--tailf`
+* `mok build` and `mok create` can show extensive kubernetes logs with `--tailf`
 
 * [Full Documentation](https://github.com/bashtools/mokctl-docs/tree/master/docs)
 
-## Support
+## Support Mok
 
-Follow:
-[Mok on BlueSky](https://bsky.app/profile/github-mok.bsky.social)
+Follow [Mok on BlueSky](https://bsky.app/profile/github-mok.bsky.social) or give Mok a star.
