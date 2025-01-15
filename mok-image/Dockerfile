@@ -134,7 +134,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.2.3"
+ARG RUNC_VERSION="v1.2.4"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
