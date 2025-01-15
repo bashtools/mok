@@ -28,8 +28,7 @@ sudo podman images | tail -n +2 | awk '{ print $3 }' | xargs sudo podman rmi --f
 Update mok
 ```
 touch mok-image/Dockerfile
-sudo make install
-make package
+make package; sudo cp package/mok /usr/local/bin
 ```
 Build prebuilt image for upload and check version as it's building:
 ```

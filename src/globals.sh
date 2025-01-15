@@ -10,9 +10,9 @@
 # Args: None expected.
 _GL_new() {
 
-  declare -rg MOKVERSION="0.8.23"
-  declare -rg K8SVERSION="1.32.0"
-  declare -rg GO_VERSION="1.23.2"
+  declare -rg MOKVERSION="0.8.24"
+  declare -rg K8SVERSION="1.32.1"
+  declare -rg GO_VERSION="1.23.4"
 
   # Returns, exit codes
   declare -rg OK=0
