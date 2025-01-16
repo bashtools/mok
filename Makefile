@@ -1,4 +1,4 @@
-VERSION = 0.8.24
+VERSION = 0.8.25
 
 .PHONY: all
 all: mok.deploy tags
@@ -21,7 +21,7 @@ package: mok.deploy
 
 .PHONY: install
 install: all
-	install mok.deploy /usr/local/bin/mok
+	sudo install mok.deploy /usr/local/bin/mok
 
 .PHONY: uninstall
 uninstall:

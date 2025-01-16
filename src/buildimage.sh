@@ -43,6 +43,11 @@ build image options:
  Flags:
   --get-prebuilt-image - Instead of building a 'node' image
          locally, download it from a container registry instead.
+  --k8sver VERSION - The Kubernetes version, e.g. "1.32.0" or "1.32.1".
+         A previous version cannot be built from scratch. This option
+         must be used with '--get-prebuilt-image'. To build a previous
+         version of kubernetes it must be built with a previous version
+         of mok.
   --tailf - Show the build output whilst building.
 
 EnD
@@ -76,6 +81,10 @@ BI_process_options() {
   --tailf)
     _BI[tailf]="${TRUE}"
     return "${OK}"
+    ;;
+  --k8sver)
+    _BI[k8sver]="$2"
+    return "$(PA_shift)"
     ;;
   --get-prebuilt-image)
     _BI[useprebuiltimage]="${TRUE}"
@@ -124,6 +133,7 @@ _BI_new() {
   _BI[baseimagename]="mok-image"
   _BI[useprebuiltimage]="${FALSE}"
   _BI[dockerbuildtmpdir]=
+  _BI[k8sver]="${K8SVERSION}"
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "build" "SUBCOMMAND" ""
@@ -164,11 +174,14 @@ _BI_build_container_image() {
 
   buildargs=$(_BI_get_build_args_for_latest) || return
   basename="${_BI[baseimagename]}_$(MA_ostype)"
-  tagname="${K8SVERSION}"
+  tagname="${_BI[k8sver]}"
 
   local imgprefix
   imgprefix=$(CU_imgprefix) || err || return
   if [[ ${_BI[useprebuiltimage]} == "${FALSE}" ]]; then
+    # Each mok release can build the hardcoded version only
+    # so reset the tagname to that version
+    tagname="${K8SVERSION}"
     buildtype="create"
     cmd="docker build \
       -t "${imgprefix}local/${basename}:${tagname}" \
@@ -177,6 +190,7 @@ _BI_build_container_image() {
       ${_BI[dockerbuildtmpdir]}/${_BI[baseimagename]}"
     text="Creating"
   else
+    # We can download and run any available version
     buildtype="download"
     cmd="docker pull docker.io/myownkind/${basename}:${tagname}"
     text="Downloading"
