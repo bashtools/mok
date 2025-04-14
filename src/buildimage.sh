@@ -173,7 +173,7 @@ _BI_build_container_image() {
   _BI_create_docker_build_dir || return
 
   buildargs=$(_BI_get_build_args_for_latest) || return
-  basename="${_BI[baseimagename]}_$(MA_ostype)"
+  basename="${_BI[baseimagename]}_$(MA_arch)"
   tagname="${_BI[k8sver]}"
 
   local imgprefix
@@ -268,7 +268,7 @@ _BI_modify_container_image() {
   # Write image
   local imgprefix tagname basename
   imgprefix=$(CU_imgprefix) || err || return
-  basename="${_BI[baseimagename]}_$(MA_ostype)"
+  basename="${_BI[baseimagename]}_$(MA_arch)"
   tagname="${K8SVERSION}"
   docker commit mok-build-modify "${imgprefix}local/${basename}:${tagname}" || err || return
 

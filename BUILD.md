@@ -34,18 +34,18 @@ Build prebuilt image for upload and check version as it's building:
 ```
 mok build image --tailf
 ```
-Tag and upload for linux:
+Tag and upload for Arm:
 ```
 VERSION=1.32.2
-sudo podman tag localhost/local/mok-image_linux:${VERSION} docker.io/myownkind/mok-image_linux:${VERSION}
+sudo podman tag localhost/local/mok-image_arm64:${VERSION} docker.io/myownkind/mok-image_arm64:${VERSION}
 sudo podman login docker.io
 sudo podman push docker.io/myownkind/mok-image_linux:${VERSION}
 ```
-Tag and upload for mac:
+Tag and upload for Intel:
 ```
 VERSION=1.32.2
-podman tag localhost/local/mok-image_macos:${VERSION} docker.io/myownkind/mok-image_macos:${VERSION}
+podman tag localhost/local/mok-image_x86_64:${VERSION} docker.io/myownkind/mok-image_x86_64:${VERSION}
 podman login docker.io
-podman push docker.io/myownkind/mok-image_macos:${VERSION}
+podman push docker.io/myownkind/mok-image_x86_64:${VERSION}
 ```
 

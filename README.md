@@ -39,7 +39,7 @@ mok delete cluster myk8s
 
 ## Requirements
 
-**MacOS on Apple Silicon (M1, M2, ...)**
+**MacOS**
 * Mok will will install any required packages using Homebrew, and will prompt you before doing so.
 * To see exactly how and what will be installed, see `src/macos.sh`.
 

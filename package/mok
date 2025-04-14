@@ -144,6 +144,29 @@ __check_os() {
 
 __mokostype="${__mokostype:-linux}"
 # shellcheck shell=bash disable=SC2148
+
+declare __mokostype
+
+set_arch() {
+  if [[ ${__mokostype} == "linux" ]]; then
+    # Is this machine x86 or arm?
+    if [[ $(uname -m) == "x86_64" ]]; then
+      export __mokarch=x86_64
+    elif [[ $(uname -m) == "aarch64" ]]; then
+      export __mokarch=arm64
+    fi
+  elif [[ ${__mokostype} == "macos" ]]; then
+    # Is this machine x86 or arm?
+    if [[ $(uname -m) == "x86_64" ]]; then
+      export __mokarch=x86_64
+    elif [[ $(uname -m) == "arm64" ]]; then
+      export __mokarch=arm64
+    fi
+  fi
+}
+
+set_arch
+# shellcheck shell=bash disable=SC2148
 # PA - PArser
 
 # _PA holds data specific to parsing the command line arguments.
@@ -3060,7 +3083,7 @@ CU_create_container() {
     err || return
   }
 
-  img="$(BI_baseimagename)_$(MA_ostype)"
+  img="$(BI_baseimagename)_$(MA_arch)"
 
   local imglocal="${_CU[imgprefix]}local/${img}"
   local imgremote="myownkind/${img}"
@@ -3501,7 +3524,7 @@ _BI_build_container_image() {
   _BI_create_docker_build_dir || return
 
   buildargs=$(_BI_get_build_args_for_latest) || return
-  basename="${_BI[baseimagename]}_$(MA_ostype)"
+  basename="${_BI[baseimagename]}_$(MA_arch)"
   tagname="${_BI[k8sver]}"
 
   local imgprefix
@@ -3596,7 +3619,7 @@ _BI_modify_container_image() {
   # Write image
   local imgprefix tagname basename
   imgprefix=$(CU_imgprefix) || err || return
-  basename="${_BI[baseimagename]}_$(MA_ostype)"
+  basename="${_BI[baseimagename]}_$(MA_arch)"
   tagname="${K8SVERSION}"
   docker commit mok-build-modify "${imgprefix}local/${basename}:${tagname}" || err || return
 
@@ -5017,7 +5040,7 @@ JSONPath_new || exit 1
 declare -A _MA
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR TRUE __mokostype
+declare OK ERROR STOP STDERR TRUE __mokostype __mokarch
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -5041,6 +5064,11 @@ MA_program_name() {
 # MA_ostype getter outputs the OS type.
 MA_ostype() {
   printf '%s' "${_MA[ostype]}"
+}
+
+# MA_ostype getter outputs the machine architecture.
+MA_arch() {
+  printf '%s' "${_MA[arch]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -5156,6 +5184,7 @@ _MA_new() {
   _MA[arg_0]="$0"
   _MA[arg_1]="$1"
   _MA[ostype]="${__mokostype}" # linux or macos
+  _MA[arch]="${__mokarch}" # x86_64 or arm64
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "version" "END" "MA_version"

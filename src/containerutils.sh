@@ -137,7 +137,7 @@ CU_create_container() {
     err || return
   }
 
-  img="$(BI_baseimagename)_$(MA_ostype)"
+  img="$(BI_baseimagename)_$(MA_arch)"
 
   local imglocal="${_CU[imgprefix]}local/${img}"
   local imgremote="myownkind/${img}"
