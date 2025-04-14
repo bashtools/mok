@@ -5,7 +5,7 @@
 declare -A _MA
 
 # Defined in GL (globals.sh)
-declare OK ERROR STOP STDERR TRUE __mokostype
+declare OK ERROR STOP STDERR TRUE __mokostype __mokarch
 
 # Getters/Setters -------------------------------------------------------------
 
@@ -29,6 +29,11 @@ MA_program_name() {
 # MA_ostype getter outputs the OS type.
 MA_ostype() {
   printf '%s' "${_MA[ostype]}"
+}
+
+# MA_ostype getter outputs the machine architecture.
+MA_arch() {
+  printf '%s' "${_MA[arch]}"
 }
 
 # Public Functions ------------------------------------------------------------
@@ -144,6 +149,7 @@ _MA_new() {
   _MA[arg_0]="$0"
   _MA[arg_1]="$1"
   _MA[ostype]="${__mokostype}" # linux or macos
+  _MA[arch]="${__mokarch}" # x86_64 or arm64
 
   # Program the parser's state machine
   PA_add_state "COMMAND" "version" "END" "MA_version"

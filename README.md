@@ -7,24 +7,39 @@ Current kubernetes version: 1.32.1
 
 ## TL;DR Quick Start
 
+Install:
+
 ```bash
 curl -O https://raw.githubusercontent.com/bashtools/mok/refs/heads/master/package/mok
 chmod +x mok
 sudo mv mok /usr/local/bin/
+```
+
+Create cluster:
+
+```
 mok build image --get-prebuilt-image
 mok create cluster myk8s --masters 1 --publish
+```
+
+Use cluser:
+
+```
 export KUBECONFIG=/var/tmp/admin-myk8s.conf
 kubectl get nodes
 kubectl get pods --all-namespaces
 kubectl run --privileged --rm -ti alpine --image alpine /bin/sh
+```
+
+Delete cluster:
+
+```
 mok delete cluster myk8s
 ```
 
-To ensure no resources are used on Mac OS afterwards, run `mok machine destroy`.
-
 ## Requirements
 
-**MacOS on Apple Silicon (M1, M2, ...)**
+**MacOS**
 * Mok will will install any required packages using Homebrew, and will prompt you before doing so.
 * To see exactly how and what will be installed, see `src/macos.sh`.
 
@@ -44,16 +59,6 @@ sudo mv mok /usr/local/bin/
 ```
 
 ## Using Mok
-
-### Add an alias (Linux only)
-
-On Linux only, use `sudo mok ...` or create an alias so that only `mok` is needed:
-
-```bash
-alias mok="sudo /usr/local/bin/mok"
-```
-
-Note: Add the alias to your shell startup file (`.bash_profile` or `.zshrc`) to make it persistent
 
 ### Build a container image
 
@@ -99,6 +104,8 @@ mok machine -h
 ```bash
 mok delete cluster myk8s
 ```
+
+On Mac OS do, `mok machine stop`, to stop the podman machine and free up resources.
 
 ## To Uninstall mok completely
 

@@ -1,11 +1,11 @@
-VERSION = 0.8.24
+VERSION = 0.8.25
 
 .PHONY: all
 all: mok.deploy tags
 
 mok.deploy: src/*.sh src/lib/*.sh mok-image mok-image/* mok-image/files/*
 	bash src/embed-dockerfile.sh
-	cd src && ( echo '#!/usr/bin/env bash'; cat macos.sh \
+	cd src && ( echo '#!/usr/bin/env bash'; cat macos.sh arch.sh \
 		lib/parser.sh globals.sh error.sh util.sh getcluster.sh machine.sh machinestop.sh \
 		machinestart.sh machinecreate.sh machinelist.sh machinedestroy.sh machinesetup.sh \
 		exec.sh deletecluster.sh createcluster.sh versions.sh containerutils.sh \
@@ -21,7 +21,7 @@ package: mok.deploy
 
 .PHONY: install
 install: all
-	install mok.deploy /usr/local/bin/mok
+	sudo install mok.deploy /usr/local/bin/mok
 
 .PHONY: uninstall
 uninstall:
