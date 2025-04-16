@@ -36,14 +36,14 @@ mok build image --tailf
 ```
 Tag and upload for Arm (built on MacOS M4):
 ```
-VERSION=1.32.2
+VERSION=1.32.3
 podman tag localhost/local/mok-image_arm64:${VERSION} docker.io/myownkind/mok-image_arm64:${VERSION}
 podman login docker.io
 podman push docker.io/myownkind/mok-image_arm64:${VERSION}
 ```
 Tag and upload for Intel (built on Fedora):
 ```
-VERSION=1.32.2
+VERSION=1.32.3
 sudo podman tag localhost/local/mok-image_x86_64:${VERSION} docker.io/myownkind/mok-image_x86_64:${VERSION}
 sudo podman login docker.io
 sudo podman push docker.io/myownkind/mok-image_x86_64:${VERSION}
