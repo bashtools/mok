@@ -17,6 +17,9 @@ set_arch() {
     elif [[ $(uname -m) == "arm64" ]]; then
       export __mokarch=arm64
     fi
+  else
+    printf 'ERROR: Unknown OS type: %s\n' "${__mokostype}" >"${STDERR}"
+    exit "${ERROR}"
   fi
 }
 
