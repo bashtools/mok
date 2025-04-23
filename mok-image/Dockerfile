@@ -24,7 +24,7 @@ ARG BASE_IMAGE=debian:bookworm-slim
 FROM $BASE_IMAGE AS base
 
 ARG KUBERNETES_VERSION=v1.32
-ARG CRIO_VERSION=v1.31
+ARG CRIO_VERSION=v1.32
 
 # copy in static files
 # all scripts and directories are 0755 (rwx r-x r-x)
@@ -134,7 +134,7 @@ RUN eval "$(gimme "${GO_VERSION}")" \
 # stage for building runc
 FROM go-build AS build-runc
 ARG TARGETARCH GO_VERSION
-ARG RUNC_VERSION="v1.2.4"
+ARG RUNC_VERSION="v1.2.6"
 ARG RUNC_CLONE_URL="https://github.com/opencontainers/runc"
 RUN git clone --filter=tree:0 "${RUNC_CLONE_URL}" /runc \
     && cd /runc \
