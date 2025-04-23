@@ -43,8 +43,8 @@ build image options:
  Flags:
   --get-prebuilt-image - Instead of building a 'node' image
          locally, download it from a container registry instead.
-  --k8sver VERSION - The Kubernetes version, e.g. "1.32.0" or "1.32.1".
-         A previous version cannot be built from scratch. This option
+  --k8sver VERSION - The Kubernetes version, e.g. "1.32.0"
+         A previous version cannot be built from scratch hence this option
          must be used with '--get-prebuilt-image'. To build a previous
          version of kubernetes it must be built with a previous version
          of mok.

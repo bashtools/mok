@@ -137,7 +137,7 @@ create cluster [flags] options:
   --with-lb - Add a haproxy load balancer. The software will be installed
          and set up to reverse proxy to the master node(s), unless
          --skiplbsetup is used.
-  --k8sver VERSION - The Kubernetes version, e.g. "1.32.0" or "1.32.1".
+  --k8sver VERSION - The Kubernetes version, e.g. "1.32.0".
          A previous version will need to be downloaded first with:
            mok build image --get-prebuilt-image --k8sver VERSION
   --masters NUM - The number of master containers to create.

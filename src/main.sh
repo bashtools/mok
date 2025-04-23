@@ -17,6 +17,7 @@ MA_program_args() {
 # MA_arg_1 getter outputs the first argument sent by the user.
 # Used by _CU_podman_checks so it doesn't check for a podman machine
 # if we're running 'machine' commands
+# FIXME: The command might not be the first argument. It could be '-p'
 MA_arg_1() {
   printf '%s' "${_MA[arg_1]}"
 }
