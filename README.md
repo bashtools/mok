@@ -3,9 +3,15 @@
 ![image](https://github.com/user-attachments/assets/0750910e-d6da-4c65-92ea-f7bc64b116cc)
 
 
-Default kubernetes version: 1.32.4
+Default kubernetes version: 1.33.0
 
-Available kubernetes versions: 1.32.0, 1.32.1, 1.32.2, 1.32.3, 1.32.4
+Available kubernetes versions:
+
+| Minor version | versions |
+| ------------- | -------- |
+| 1.31.x        | not supported |
+| 1.32.x        | 1.32.0, 1.32.1, 1.32.2, 1.32.3, 1.32.4 |
+| 1.33.x        | 1.33.0 |
 
 ## TL;DR Quick Start
 

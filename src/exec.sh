@@ -160,21 +160,22 @@ _EX_exec() {
   containerrt=$(CU_containerrt) || err || return
   podmantype=$(CU_podmantype) || err || return
 
-  # TODO: A named podman machine does not work the same way
-  #       as the default podman machine. Rootful doesn't work
-  #       for a named machine so need to use '--url'. Ask
-  #       Podman developers about this.
-  port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
-  url="ssh://root@127.0.0.1:$port/run/podman/podman.sock"
-
-  read -rt 0.1
   if [[ $containerrt == "podman" && $podmantype == "machine" ]]; then
-      # TODO: This would be preferred to '--url'
+    # TODO: A named podman machine does not work the same way
+    #       as the default podman machine. Rootful doesn't work
+    #       for a named machine so need to use '--url'. Ask
+    #       Podman developers about this.
+    port=$(podman machine inspect mok-machine | grep Port | grep -o '[0-9]\+')
+    url="ssh://root@127.0.0.1:$port/run/podman/podman.sock"
+    # TODO: This would be preferred to using '--url'
     # podman -c mok-machine exec -ti "$1" "${cmd}" 
+    read -rt 0.1
     podman --url "${url}" exec -ti "$1" "${cmd}" 
   elif [[ $containerrt == "podman" ]]; then
+    read -rt 0.1
     exec podman exec -ti "$1" "${cmd}"
   elif [[ $containerrt == "docker" ]]; then
+    read -rt 0.1
     exec docker exec -ti "$1" "${cmd}"
   fi
 }
