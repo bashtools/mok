@@ -11,7 +11,7 @@ Available kubernetes versions:
 | ------------- | -------- |
 | 1.31.x        | not supported |
 | 1.32.x        | 1.32.0, 1.32.1, 1.32.2, 1.32.3, 1.32.4 |
-| 1.33.x        | 1.33.0 |
+| 1.33.x        | 1.33.0, 1.33.1 |
 
 ## TL;DR Quick Start
 
